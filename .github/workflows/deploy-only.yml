@@ -52,6 +52,13 @@ jobs:
       - name: Generate site from cached data
         run: node _generator/bin --generate --verbose
         
+      - name: Save scraper cache
+        uses: actions/cache/save@v4
+        if: always()
+        with:
+          path: _generator/tmp/
+          key: scraper-cache-${{ steps.date.outputs.date }}-${{ github.run_number }}
+        
       - name: Setup Pages
         uses: actions/configure-pages@v5
         
