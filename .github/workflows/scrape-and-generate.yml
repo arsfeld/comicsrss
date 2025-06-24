@@ -36,21 +36,28 @@ jobs:
       - name: Install dependencies
         run: npm ci --prefix _generator
         
+      - name: Get current date
+        id: date
+        run: echo "date=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
+        
+      - name: Restore scraper cache
+        uses: actions/cache/restore@v4
+        with:
+          path: _generator/tmp/
+          key: scraper-cache-${{ steps.date.outputs.date }}-${{ github.run_number }}
+          restore-keys: |
+            scraper-cache-${{ steps.date.outputs.date }}-
+            scraper-cache-
+            
       - name: Run scraper and generator
         run: node _generator/bin --scrape --generate --verbose
         
-      - name: Configure git
-        run: |
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git config user.name "github-actions[bot]"
-          
-      - name: Commit updated cache files only
-        run: |
-          git add _generator/tmp/
-          git commit -m "Update scraped data cache" || echo "No cache changes detected"
-          
-      - name: Push cache updates
-        run: git push origin gh-pages || echo "No changes to push"
+      - name: Save scraper cache
+        uses: actions/cache/save@v4
+        if: always()
+        with:
+          path: _generator/tmp/
+          key: scraper-cache-${{ steps.date.outputs.date }}-${{ github.run_number }}
         
       - name: Setup Pages
         uses: actions/configure-pages@v5

@@ -7,3 +7,6 @@ rss/
 preview/
 index.html
 espanol.html
+
+# Scraper cache - handled by GitHub Actions cache
+_generator/tmp/*.json
