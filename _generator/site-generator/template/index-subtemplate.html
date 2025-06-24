@@ -60,7 +60,7 @@
 						{{@ seriesObject.title }} <small>{{@ seriesObject.author ? 'by ' + seriesObject.author : '' }}</small>
 					</div>
 					<div class="actions">
-						<a href="./rss-previewer.html?url={{ encodeURIComponent(location.origin + '/rss/' + seriesObject.basename + '.rss') }}" target="_blank">
+						<a href="./rss-previewer.html?url={{ encodeURIComponent('/rss/' + seriesObject.basename + '.rss') }}" target="_blank">
 							<img src="./static/external_sm.png" class="icon" alt="">
 							Preview
 						</a>

@@ -117,15 +117,26 @@
                     throw new Error('No RSS feed URL provided. Please add ?url=YOUR_RSS_FEED_URL to the URL.');
                 }
                 
+                // Handle relative URLs
+                let fullFeedUrl = feedUrl;
+                if (feedUrl.startsWith('/')) {
+                    // Relative URL - prepend the origin
+                    fullFeedUrl = window.location.origin + feedUrl;
+                } else if (!feedUrl.startsWith('http://') && !feedUrl.startsWith('https://')) {
+                    // Relative path - resolve relative to current page
+                    const base = new URL(window.location.href);
+                    fullFeedUrl = new URL(feedUrl, base).href;
+                }
+                
                 // Parse the feed URL to get the comic name
-                const comicMatch = feedUrl.match(/\/rss\/(.+)\.rss$/);
+                const comicMatch = fullFeedUrl.match(/\/rss\/(.+)\.rss$/);
                 const comicName = comicMatch ? comicMatch[1] : 'comic';
                 
                 // Create back link
-                const backLink = document.referrer || 'https://www.comicsrss.com/';
+                const backLink = document.referrer || './';
                 
                 // Fetch the RSS feed
-                const response = await fetch(feedUrl);
+                const response = await fetch(fullFeedUrl);
                 
                 if (!response.ok) {
                     throw new Error(`Failed to fetch RSS feed: ${response.status} ${response.statusText}`);
