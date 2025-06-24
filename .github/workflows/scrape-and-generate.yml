@@ -1,0 +1,42 @@
+name: Scrape and Generate Comics RSS
+
+on:
+  schedule:
+    # Run every 6 hours at 15 minutes past the hour
+    - cron: '15 0,6,12,18 * * *'
+  workflow_dispatch: # Allow manual triggers
+
+jobs:
+  scrape-and-generate:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          # Need to fetch full history for git operations
+          fetch-depth: 0
+          
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          
+      - name: Install dependencies
+        run: npm ci --prefix _generator
+        
+      - name: Run scraper and generator
+        run: node _generator/bin --scrape --generate --verbose
+        
+      - name: Configure git
+        run: |
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          
+      - name: Commit changes
+        run: |
+          git add .
+          git commit -m "scheduled scrape/generate" || echo "No changes detected"
+          
+      - name: Push to GitHub Pages
+        run: git push origin gh-pages
