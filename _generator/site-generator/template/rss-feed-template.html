@@ -6,7 +6,7 @@
 		<description>{{title}}{{author ? ' by ' + author : ''}}</description>
 		<lastBuildDate>{{updatedDate.toUTCString()}}</lastBuildDate>
 		<docs>http://blogs.law.harvard.edu/tech/rss</docs>
-		<generator>https://github.com/arsfeld/comicsrss</generator>
+		<generator>{{config.github.url}}</generator>
 		<language>{{language === 'spa' ? 'es' : 'en'}}</language>
 		<image>
 			<title>{{title}}</title>
@@ -39,7 +39,7 @@
 </p>
 <p style="font-size: 11px; color: #666; margin-top: 12px; border-top: 1px solid #eee; padding-top: 8px;">
 	🔗 <a href="{{strip.url}}" style="color: #666;">Original</a> • 
-	🤖 <a href="https://github.com/arsfeld/comicsrss" style="color: #666;">Scraped by comicsrss</a> • 
+	🤖 <a href="{{config.github.url}}" style="color: #666;">Scraped by {{config.site.name}}</a> • 
 	© {{author || 'Comic author'}}
 </p>
 ]]></description>

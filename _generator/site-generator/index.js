@@ -1,6 +1,7 @@
 const renderTemplate = require('./render-template.js')
 const writeFileRoot = require('./write-file-root.js')
 const generateRssFeedFromSeriesObject = require('./generate-rss-feed-from-series-object.js')
+const config = require('../config.js')
 
 module.exports = function writeFilesFromSeriesObjects(seriesObjectsArr, supporters) {
 	const renderData = {
@@ -8,6 +9,7 @@ module.exports = function writeFilesFromSeriesObjects(seriesObjectsArr, supporte
 		seriesObjects: seriesObjectsArr,
 		supporters,
 		generatedDate: new Date().toDateString(),
+		config,
 	}
 
 	writeFileRoot('index.html', renderTemplate('master', { ...renderData, language: 'eng' }))

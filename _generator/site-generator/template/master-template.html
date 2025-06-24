@@ -24,9 +24,9 @@
 	{{include './'+subtemplate+'-subtemplate.html'}}
 
 	<footer class="text-center">
-		<a href="https://github.com/arsfeld/comicsrss">GitHub</a> -
+		<a href="{{config.github.url}}">GitHub</a> -
 		Made by <a href="https://www.josephdykstra.com">Joseph Dykstra</a> -
-		Forked by <a href="https://github.com/arsfeld">arsfeld</a>
+		Forked by <a href="https://github.com/{{config.github.repo.split('/')[0]}}">{{config.github.repo.split('/')[0]}}</a>
 	</footer>
 </body>
 </html>

@@ -1,4 +1,5 @@
 const renderTemplate = require('./render-template.js')
+const config = require('../config.js')
 
 module.exports = seriesObject => {
 	if (! seriesObject || ! seriesObject.strips || ! seriesObject.strips.length) {
@@ -23,6 +24,7 @@ module.exports = seriesObject => {
 			return strip
 		}),
 		url,
+		config,
 	}
 
 	return renderTemplate('rss-feed', templateOpts)

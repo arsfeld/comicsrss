@@ -64,10 +64,18 @@ node scrapers/lib/query-html.test.js
 - `_generator/tmp/` - Cached scraper data (JSON files, gitignored)
 - `.github/workflows/scrape-and-generate.yml` - GitHub Actions deployment
 
+## Configuration
+
+When forking this repository, update `_generator/config.js` to customize:
+- `github.repo` - Change to your GitHub username/repo (e.g., "yourname/comicsrss")
+- `site.name` - Update the site name shown in RSS attributions
+- All GitHub links, RSS previewer URLs, and repository references will automatically update
+
 ## Key Implementation Details
 
 - No linting or type checking configured
 - Minimal dependencies: art-template, css-select, htmlparser2, json-stable-stringify
 - Tests use Node.js assert module directly (no test framework)
 - GitHub Actions uses caching to preserve scraper data between runs
-- Generated files (index.html, rss/*.rss) are committed to gh-pages branch
+- Generated files (index.html, rss/*.rss) are created by GitHub Actions and deployed to GitHub Pages
+- All repository URLs are centralized in `_generator/config.js` for easy forking
