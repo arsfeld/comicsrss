@@ -1,3 +1,9 @@
 node_modules
 npm-debug.log
 comicsrss.com.sublime-workspace
+
+# Generated content - these files are built during CI/CD
+rss/
+preview/
+index.html
+espanol.html

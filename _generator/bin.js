@@ -65,12 +65,21 @@ async function main(options) {
 	}
 	let scrapeErrors = []
 	if (scrape) {
+		if (global.VERBOSE) {
+			console.log(`Starting to scrape ${scraperNames.length} scrapers in parallel...`)
+		}
+		const scrapeStartTime = new Date()
 		const scrapeResults = await Promise.allSettled(scraperNames.map(runScraper))
+		const scrapeEndTime = new Date()
+		
 		scrapeErrors = scrapeResults
 			.filter(({ status }) => status === 'rejected')
 			.map(({ reason }) => reason)
 
-
+		if (global.VERBOSE) {
+			console.log(`Scraping completed in ${(scrapeEndTime - scrapeStartTime) / 1000} seconds`)
+			console.log(`Successful scrapers: ${scrapeResults.filter(r => r.status === 'fulfilled').length}/${scraperNames.length}`)
+		}
 	}
 	if (generate) {
 		const siteGenerator = require('./site-generator/index.js')

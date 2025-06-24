@@ -80,9 +80,9 @@ module.exports = async function main(cached_series_objects) {
 			console.log(`gocomics: ${ slug }: ${ new_strip_dates.length } new strips: ${ new_strip_dates.join(', ') }`)
 		}
 
-		let new_strips = []
-		for (const date of new_strip_dates) {
-			await new Promise(resolve => setTimeout(resolve, rate_limit))
+		const fetchStripWithDelay = async (date, index) => {
+			// Stagger requests to respect rate limits while still being faster than sequential
+			await new Promise(resolve => setTimeout(resolve, rate_limit * index / 3))
 
 			const page_url = `${ base }/${ slug }/${ date.replace(/-/g, '/') }`
 			const html = await fetch2(page_url)
@@ -97,12 +97,16 @@ module.exports = async function main(cached_series_objects) {
 				throw new Error(`gocomics: ${ slug }: ${ date }: image_json not found`)
 			}
 
-			new_strips.push({
+			return {
 				imageUrl: image_json.contentUrl, // or image_json.url... they seem to be the same
 				date,
 				url: page_url,
-			})
+			}
 		}
+
+		const new_strips = await Promise.all(
+			new_strip_dates.map((date, index) => fetchStripWithDelay(date, index))
+		)
 
 		series_object.strips = [
 			...new_strips,

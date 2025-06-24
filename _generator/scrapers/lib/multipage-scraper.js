@@ -10,7 +10,10 @@ module.exports = async function multipageScraper({ getSeriesObjects, getStrip, c
 	if (global.DEBUG) {
 		seriesObjectsKeys = seriesObjectsKeys.slice(0, 10)
 	}
-	for (const basename of seriesObjectsKeys) {
+	const processComic = async (basename, index) => {
+		// Stagger requests to avoid overwhelming the server
+		await new Promise(resolve => setTimeout(resolve, index * 100))
+		
 		const newSeriesObject = newSeriesObjects[basename]
 		const cachedSeriesObject = cachedSeriesObjects[basename]
 		const cachedStrips = cachedSeriesObject && cachedSeriesObject.strips || []
@@ -35,6 +38,15 @@ module.exports = async function multipageScraper({ getSeriesObjects, getStrip, c
 				console.error(newSeriesObject.mostRecentStripUrl)
 			}
 		}
+	}
+
+	// Process comics in parallel with limited concurrency
+	const BATCH_SIZE = 5 // Process 5 comics at a time
+	for (let i = 0; i < seriesObjectsKeys.length; i += BATCH_SIZE) {
+		const batch = seriesObjectsKeys.slice(i, i + BATCH_SIZE)
+		await Promise.allSettled(
+			batch.map((basename, index) => processComic(basename, index))
+		)
 	}
 
 	return cachedSeriesObjects
