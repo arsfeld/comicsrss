@@ -5,6 +5,7 @@ const { query_html, element_to_text } = require('./lib/query-html.js')
 const unavailableComics = [
 	'thepajamadiaries',
 	'nestheads',
+	'poorlydrawnlines', // Missing required Facebook sharing elements
 ]
 
 async function getSeriesObjects() {
@@ -34,22 +35,39 @@ async function getStrip(stripPageUrl) {
 	const html = await fetch(stripPageUrl)
 	const $ = query_html(html)
 
-	const facebook_url = $('.facebook')[0].attribs.href.replace(/&amp;/g, '&')
+	const facebookElement = $('.facebook')[0]
+	if (!facebookElement || !facebookElement.attribs || !facebookElement.attribs.href) {
+		throw new Error(`Facebook sharing element not found on page: ${stripPageUrl}`)
+	}
+
+	const facebook_url = facebookElement.attribs.href.replace(/&amp;/g, '&')
 	const facebook_url_params = new URL(facebook_url).searchParams
 	// https://www.facebook.com/sharer.php?u=https%3A%2F%2Fwww.arcamax.com%2Fthefunnies%2Fmutts%2Fs-2375148&amp;h=Mutts+for+6%2F23%2F2020
 	const url = facebook_url_params.get('u')
 	const m_d_yyyyDate = facebook_url_params.get('h').trim().split(' ').pop()
-	const mmm_d_date = element_to_text($('span.cur')[0])
+	
+	const curElement = $('span.cur')[0]
+	const mmm_d_date = curElement ? element_to_text(curElement) : null
 	const date = m_d_yyyyDate.includes('/')
 		? usDateToIsoDate(m_d_yyyyDate)
 		: mmm_d_date && humanReadableDateToIsoDate(mmm_d_date)
 
-	const imageUrl = new URL($('img#comic-zoom')[0].attribs.src, 'https://www.arcamax.com').toString()
-	const author = element_to_text($('cite')[0]).replace(/^by /, '')
+	const comicImageElement = $('img#comic-zoom')[0]
+	if (!comicImageElement || !comicImageElement.attribs || !comicImageElement.attribs.src) {
+		throw new Error(`Comic image not found on page: ${stripPageUrl}`)
+	}
+
+	const imageUrl = new URL(comicImageElement.attribs.src, 'https://www.arcamax.com').toString()
+	
+	const authorElement = $('cite')[0]
+	const author = authorElement ? element_to_text(authorElement).replace(/^by /, '') : ''
 	const isOldestStrip = /class="prev-off"/.test(html)
-	const olderRelUrl = isOldestStrip || $('a.prev')[0].attribs.href
+	const prevElement = $('a.prev')[0]
+	const olderRelUrl = isOldestStrip || (prevElement && prevElement.attribs && prevElement.attribs.href)
 	// const newerRelUrl = $('a.next')[0].attribs.href
-	const headerImageUrl = $('meta[property="og:image"]')[0].attribs.content
+	
+	const ogImageElement = $('meta[property="og:image"]')[0]
+	const headerImageUrl = ogImageElement && ogImageElement.attribs && ogImageElement.attribs.content
 
 	return {
 		imageUrl,
