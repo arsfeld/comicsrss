@@ -110,6 +110,9 @@ function parseCliOptions(args) {
 
 function readSeriesObjectsFile(scraperName) {
 	const filePath = getSeriesObjectsPath(scraperName)
+	if (!fs.existsSync(filePath)) {
+		return {}
+	}
 	const json = fs.readFileSync(filePath, 'utf-8')
 	return JSON.parse(json)
 }
