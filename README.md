@@ -1,6 +1,15 @@
 # comicsrss.com
 
-[![ComicsRSS](https://circleci.com/gh/ArtskydJ/comicsrss.com.svg?style=svg)](https://app.circleci.com/pipelines/github/ArtskydJ/comicsrss.com)
+> [!IMPORTANT]
+> **This is a personal fork of the original comicsrss.com project**
+> 
+> This fork is maintained to re-enable some comics that were removed from the original site and is intended **for personal use only**. Please respect copyright laws and the terms of service of the comic websites.
+> 
+> For the official Comics RSS site, please visit [comicsrss.com](https://www.comicsrss.com).
+
+---
+
+[![Scrape, Generate and Deploy Comics RSS](https://github.com/arsfeld/comicsrss/actions/workflows/scrape-and-generate.yml/badge.svg)](https://github.com/arsfeld/comicsrss/actions/workflows/scrape-and-generate.yml)
 
 Source code for the site generator and rss feed generator for [comicsrss.com](https://www.comicsrss.com).
 
@@ -20,7 +29,7 @@ Probably trim these sections down sometime later... -->
 
 ## Technical Details
 
-I have received [many requests](https://github.com/ArtskydJ/comicsrss.com/issues/86) to add more comic series to the site. However, my time is limited. So if you want to help out, you can make a scraper!
+I have received [many requests](https://github.com/arsfeld/comicsrss/issues/86) to add more comic series to the site. However, my time is limited. So if you want to help out, you can make a scraper!
 
 To be able to add comic series to Comics RSS, it is helpful to understand the basics of what is going on.
 
@@ -76,21 +85,21 @@ npx serve
 
 
 
-### Run your own auto-updating scraper and website using CircleCI
+### Run your own auto-updating scraper and website using GitHub Actions
 
 1. Fork the repository
-2. [Create a GitHub Deploy Key](https://circleci.com/docs/2.0/gh-bb-integration/#creating-a-github-deploy-key), add it to GitHub, and CircleCI
-3. Change `.circleci/config.yml` from my username, email, and key fingerprint to your username, email, and key fingerprint
-4. Enable the repo in CircleCI
-5. I think that's it? Make a PR if you attempt the above steps and I missed something!
+2. The GitHub Actions workflow is already configured to run automatically
+3. Ensure GitHub Pages is enabled in your repository settings (set to deploy from GitHub Actions)
+4. The workflow will run every 6 hours and on manual trigger
+5. That's it! The site will be automatically scraped and deployed
 
 
 
 ## Scraper API
 
-To create a scraper for a single-series website that shows multiple days' comic strips per web page, copy the code from [dilbert.js](https://github.com/ArtskydJ/comicsrss.com/tree/gh-pages/_generator/scrapers/dilbert.js) and change it as needed.
+To create a scraper for a single-series website that shows multiple days' comic strips per web page, copy the code from [dilbert.js](https://github.com/arsfeld/comicsrss/tree/gh-pages/_generator/scrapers/dilbert.js) and change it as needed.
 
-To create a scraper for a multi-series website, copy the code from [arcamax.js](https://github.com/ArtskydJ/comicsrss.com/tree/gh-pages/_generator/scrapers/arcamax.js) and change it as needed.
+To create a scraper for a multi-series website, copy the code from [arcamax.js](https://github.com/arsfeld/comicsrss/tree/gh-pages/_generator/scrapers/arcamax.js) and change it as needed.
 
 If you're not sure which to use, probaby start from `arcamax.js`, or feel free to open a GitHub issue to discuss it with me.
 
@@ -144,12 +153,12 @@ module.exports = function main(cachedSeriesObjects) {
 ### More examples
 
 #### Dilbert
-You can find the code [here](https://github.com/ArtskydJ/comicsrss.com/tree/gh-pages/_generator/scrapers/dilbert). It is quite similar to the example above. Dilbert was quite easy because with one https request, I can parse 3 comic strips. (If you load the website, you'll see that it has javascript infinite-scrolling.) I haven't bothered adding the feature to navigate the back-catalog.
+You can find the code [here](https://github.com/arsfeld/comicsrss/tree/gh-pages/_generator/scrapers/dilbert). It is quite similar to the example above. Dilbert was quite easy because with one https request, I can parse 3 comic strips. (If you load the website, you'll see that it has javascript infinite-scrolling.) I haven't bothered adding the feature to navigate the back-catalog.
 
 
 #### Go Comics
 
-You can also find the code [here](https://github.com/ArtskydJ/comicsrss.com/tree/gh-pages/_generator/scrapers/gocomics). It is much more complicated since it hosts multiple comic strips. It is also more complicated since it is written to navigate the back-catalog of comic strips as needed. Each gocomics.com comic strip page only shows one comic strip at a time.
+You can also find the code [here](https://github.com/arsfeld/comicsrss/tree/gh-pages/_generator/scrapers/gocomics). It is much more complicated since it hosts multiple comic strips. It is also more complicated since it is written to navigate the back-catalog of comic strips as needed. Each gocomics.com comic strip page only shows one comic strip at a time.
 
 My scraper could stop working if gocomics.com changes their website. If I don't fix it for 3 days, and if my scraper only looked at the latest comic strip, then I would permanently miss a few days of comic strips. That is why it is important to be able to navigate the back-catalog.
 
