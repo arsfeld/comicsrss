@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RSS Feed Preview</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+        
+        .feed-header {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .feed-title {
+            font-size: 24px;
+            font-weight: bold;
+            margin: 0 0 10px 0;
+        }
+        
+        .feed-description {
+            color: #666;
+            margin: 0;
+        }
+        
+        .feed-item {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .item-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin: 0 0 5px 0;
+        }
+        
+        .item-title a {
+            color: #0066cc;
+            text-decoration: none;
+        }
+        
+        .item-title a:hover {
+            text-decoration: underline;
+        }
+        
+        .item-date {
+            color: #666;
+            font-size: 14px;
+            margin: 0 0 10px 0;
+        }
+        
+        .item-description {
+            margin: 10px 0 0 0;
+            line-height: 1.5;
+        }
+        
+        .item-description img {
+            max-width: 100%;
+            height: auto;
+            margin: 10px 0;
+        }
+        
+        .error {
+            background-color: #fee;
+            color: #c33;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+        
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: #0066cc;
+            text-decoration: none;
+        }
+        
+        .back-link:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div id="content">
+        <div class="loading">Loading RSS feed...</div>
+    </div>
+
+    <script>
+        (async function() {
+            const contentDiv = document.getElementById('content');
+            
+            try {
+                // Get URL from query parameter
+                const urlParams = new URLSearchParams(window.location.search);
+                const feedUrl = urlParams.get('url');
+                
+                if (!feedUrl) {
+                    throw new Error('No RSS feed URL provided. Please add ?url=YOUR_RSS_FEED_URL to the URL.');
+                }
+                
+                // Parse the feed URL to get the comic name
+                const comicMatch = feedUrl.match(/\/rss\/(.+)\.rss$/);
+                const comicName = comicMatch ? comicMatch[1] : 'comic';
+                
+                // Create back link
+                const backLink = document.referrer || 'https://www.comicsrss.com/';
+                
+                // Fetch the RSS feed
+                const response = await fetch(feedUrl);
+                
+                if (!response.ok) {
+                    throw new Error(`Failed to fetch RSS feed: ${response.status} ${response.statusText}`);
+                }
+                
+                const text = await response.text();
+                
+                // Parse XML
+                const parser = new DOMParser();
+                const xml = parser.parseFromString(text, 'text/xml');
+                
+                // Check for XML parse errors
+                const parseError = xml.querySelector('parsererror');
+                if (parseError) {
+                    throw new Error('Invalid RSS feed format');
+                }
+                
+                // Extract channel information
+                const channel = xml.querySelector('channel');
+                if (!channel) {
+                    throw new Error('No channel found in RSS feed');
+                }
+                
+                const title = channel.querySelector('title')?.textContent || 'RSS Feed';
+                const description = channel.querySelector('description')?.textContent || '';
+                const link = channel.querySelector('link')?.textContent || '#';
+                
+                // Extract items
+                const items = Array.from(channel.querySelectorAll('item'));
+                
+                // Build HTML
+                let html = `<a href="${escapeHtml(backLink)}" class="back-link">← Back to Comics RSS</a>`;
+                
+                html += `<div class="feed-header">
+                    <h1 class="feed-title">${escapeHtml(title)}</h1>
+                    ${description ? `<p class="feed-description">${escapeHtml(description)}</p>` : ''}
+                </div>`;
+                
+                if (items.length === 0) {
+                    html += '<div class="error">No items found in this RSS feed</div>';
+                } else {
+                    items.forEach(item => {
+                        const itemTitle = item.querySelector('title')?.textContent || 'Untitled';
+                        const itemLink = item.querySelector('link')?.textContent || '#';
+                        const itemDate = item.querySelector('pubDate')?.textContent || '';
+                        const itemDescription = item.querySelector('description')?.textContent || '';
+                        
+                        html += `<div class="feed-item">
+                            <h2 class="item-title">
+                                <a href="${escapeHtml(itemLink)}" target="_blank">${escapeHtml(itemTitle)}</a>
+                            </h2>
+                            ${itemDate ? `<p class="item-date">${escapeHtml(formatDate(itemDate))}</p>` : ''}
+                            ${itemDescription ? `<div class="item-description">${itemDescription}</div>` : ''}
+                        </div>`;
+                    });
+                }
+                
+                contentDiv.innerHTML = html;
+                
+                // Update page title
+                document.title = `${title} - RSS Feed Preview`;
+                
+            } catch (error) {
+                contentDiv.innerHTML = `<div class="error">
+                    <h2>Error loading RSS feed</h2>
+                    <p>${escapeHtml(error.message)}</p>
+                </div>`;
+            }
+        })();
+        
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        function formatDate(dateString) {
+            try {
+                const date = new Date(dateString);
+                return date.toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+            } catch (e) {
+                return dateString;
+            }
+        }
+    </script>
+</body>
+</html>

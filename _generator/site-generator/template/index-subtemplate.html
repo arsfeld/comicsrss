@@ -60,7 +60,7 @@
 						{{@ seriesObject.title }} <small>{{@ seriesObject.author ? 'by ' + seriesObject.author : '' }}</small>
 					</div>
 					<div class="actions">
-						<a href="https://arsfeld.github.io/rss-previewer/?url={{ 'https://www.comicsrss.com/rss/' + seriesObject.basename + '.rss' }}" target="_blank">
+						<a href="./rss-previewer.html?url={{ encodeURIComponent(location.origin + '/rss/' + seriesObject.basename + '.rss') }}" target="_blank">
 							<img src="./static/external_sm.png" class="icon" alt="">
 							Preview
 						</a>
