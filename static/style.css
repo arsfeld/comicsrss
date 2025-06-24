@@ -94,6 +94,7 @@ ul#comics-list {
 	min-height: 2em;
 	max-height: 70vh;
 	overflow-y: auto;
+	overflow-x: hidden;
 	position: relative;
 }
 
@@ -119,6 +120,9 @@ ul#comics-list > li {
 	flex-direction: row;
 	justify-content: space-between;
 	align-items: center;
+	min-width: 0;
+	width: 100%;
+	box-sizing: border-box;
 }
 
 ul#comics-list > li:hover {
@@ -145,6 +149,8 @@ ul#comics-list > li:hover {
 	font-size: 18px;
 	font-weight: 500;
 	color: #333;
+	flex: 1;
+	min-width: 0;
 }
 
 .ellipsis small {
@@ -159,6 +165,7 @@ ul#comics-list > li:hover {
 	display: flex;
 	gap: 12px;
 	align-items: center;
+	flex-shrink: 0;
 }
 
 .actions a {
