@@ -37,8 +37,10 @@
 			<description><![CDATA[<p>
 	<img src="{{strip.imageUrl}}" alt="{{title}}{{author ? ' by ' + author : ''}} on {{strip.date.toUTCString().slice(0, -13)}}" title="{{title}}{{author ? ' by ' + author : ''}} on {{strip.date.toUTCString().slice(0, -13)}}">
 </p>
-<p>
-	<a href="{{strip.url}}">Source</a>
+<p style="font-size: 11px; color: #666; margin-top: 12px; border-top: 1px solid #eee; padding-top: 8px;">
+	🔗 <a href="{{strip.url}}" style="color: #666;">Original</a> • 
+	🤖 <a href="https://github.com/arsfeld/comicsrss" style="color: #666;">Scraped by comicsrss</a> • 
+	© {{author || 'Comic author'}}
 </p>
 ]]></description>
 		</item>{{/each}}
