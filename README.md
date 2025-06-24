@@ -17,9 +17,9 @@ Also, all of the site's content is in this repository, as it is hosted by GitHub
 
 
 
-## Support Me
+## Support the Original Project
 
-If you'd like to help keep this site going, you can send me a few bucks using [Patreon](https://www.patreon.com/bePatron?u=6855838). I'd really appreciate it!
+If you'd like to help keep the original Comics RSS site going, you can support the creator via [PayPal](https://paypal.me/artskydj).
 
 
 <!-- Try to cut down on all these unnecessary details...
