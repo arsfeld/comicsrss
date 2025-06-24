@@ -146,6 +146,16 @@ ul#comics-list > li:hover {
 		align-items: flex-start;
 	}
 	
+	.comic-info {
+		width: 100%;
+		margin-bottom: 8px;
+	}
+	
+	.comic-meta {
+		gap: 8px;
+		flex-wrap: wrap;
+	}
+	
 	.actions {
 		margin-top: 10px;
 		width: 100%;
@@ -158,6 +168,14 @@ ul#comics-list > li:hover {
 	}
 }
 
+.comic-info {
+	flex: 1;
+	min-width: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+
 .ellipsis {
 	text-overflow: ellipsis;
 	display: block;
@@ -166,14 +184,38 @@ ul#comics-list > li:hover {
 	font-size: 18px;
 	font-weight: 500;
 	color: #333;
-	flex: 1;
-	min-width: 0;
 }
 
 .ellipsis small {
 	font-weight: 400;
 	color: #666;
 	font-size: 14px;
+}
+
+.comic-meta {
+	display: flex;
+	gap: 12px;
+	font-size: 12px;
+	color: #888;
+}
+
+.comic-meta span {
+	display: flex;
+	align-items: center;
+}
+
+.strip-count {
+	font-weight: 500;
+	color: #0066cc;
+}
+
+.last-update {
+	color: #666;
+}
+
+.no-strips {
+	color: #999;
+	font-style: italic;
 }
 
 /* Actions */
