@@ -178,6 +178,7 @@ async function main(options) {
 	
 	// Output JSON summary for GitHub Actions
 	if (process.env.GITHUB_ACTIONS && scrape) {
+		// Create a summary focused on errors and comic updates
 		const summary = {
 			totalTime: ((new Date() - startTime) / 1000).toFixed(1),
 			scrapers: {
@@ -189,21 +190,27 @@ async function main(options) {
 				total: scrapeStats.reduce((sum, s) => sum + s.comicCount, 0),
 				newStrips: scrapeStats.reduce((sum, s) => sum + s.newStrips, 0)
 			},
-			details: scrapeStats,
+			// Simple scraper summary without detailed logs
+			details: scrapeStats.map(s => ({
+				scraperName: s.scraperName,
+				comicCount: s.comicCount,
+				newStrips: s.newStrips,
+				timeTaken: s.timeTaken
+			})),
+			// Keep ALL errors - they're important
 			errors: scrapeErrors,
-			scraperLogs: scrapeStats.reduce((acc, scraper) => {
-				if (scraper.logs && scraper.logs.length > 0) {
-					acc[scraper.scraperName] = scraper.logs
-				}
-				return acc
-			}, {}),
+			// Focus on comics with new content - this is what matters
 			comicsWithNewContent: scrapeStats
 				.flatMap(scraper => scraper.comicDetails
 					.filter(comic => comic.newStrips > 0)
-					.map(comic => ({ ...comic, scraper: scraper.scraperName }))
+					.map(comic => ({
+						name: comic.name,
+						newStrips: comic.newStrips,
+						latestDate: comic.latestDate,
+						scraper: scraper.scraperName
+					}))
 				)
 				.sort((a, b) => b.newStrips - a.newStrips)
-				.slice(0, 50) // Top 50 for the summary
 		}
 		console.log('::GITHUB_ACTIONS_SUMMARY::' + JSON.stringify(summary))
 	}

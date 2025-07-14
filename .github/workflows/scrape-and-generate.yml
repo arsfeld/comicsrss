@@ -56,11 +56,17 @@ jobs:
           # Run scraper and capture output
           node _generator/bin --scrape --generate --verbose 2>&1 | tee scraper-output.log
           
-          # Extract summary JSON if present
-          SUMMARY=$(grep "::GITHUB_ACTIONS_SUMMARY::" scraper-output.log | sed 's/::GITHUB_ACTIONS_SUMMARY:://')
-          if [ ! -z "$SUMMARY" ]; then
-            echo "$SUMMARY" > summary.json
-            echo "has_summary=true" >> $GITHUB_OUTPUT
+          # Extract summary JSON if present (using awk for more robust extraction)
+          if grep -q "::GITHUB_ACTIONS_SUMMARY::" scraper-output.log; then
+            awk -F'::GITHUB_ACTIONS_SUMMARY::' '/::GITHUB_ACTIONS_SUMMARY::/{print $2}' scraper-output.log > summary.json
+            # Check if summary.json has content
+            if [ -s summary.json ]; then
+              echo "has_summary=true" >> $GITHUB_OUTPUT
+            else
+              echo "has_summary=false" >> $GITHUB_OUTPUT
+            fi
+          else
+            echo "has_summary=false" >> $GITHUB_OUTPUT
           fi
         
       - name: Generate job summary
@@ -69,7 +75,20 @@ jobs:
         with:
           script: |
             const fs = require('fs');
-            const summary = JSON.parse(fs.readFileSync('summary.json', 'utf8'));
+            
+            // Check if summary.json exists and has content
+            if (!fs.existsSync('summary.json')) {
+              console.log('No summary.json file found');
+              return;
+            }
+            
+            const summaryContent = fs.readFileSync('summary.json', 'utf8').trim();
+            if (!summaryContent) {
+              console.log('summary.json is empty');
+              return;
+            }
+            
+            const summary = JSON.parse(summaryContent);
             
             let markdown = '## 📊 Comics RSS Scraping Summary\n\n';
             
@@ -97,18 +116,6 @@ jobs:
               markdown += '\n';
             }
             
-            // Scraper logs if any
-            if (summary.scraperLogs && Object.keys(summary.scraperLogs).length > 0) {
-              markdown += '### 📋 Scraper Logs\n\n';
-              Object.entries(summary.scraperLogs).forEach(([scraper, logs]) => {
-                markdown += `#### ${scraper}\n\n`;
-                logs.forEach(log => {
-                  const icon = log.type === 'error' ? '❌' : '📝';
-                  markdown += `${icon} ${log.message}\n`;
-                });
-                markdown += '\n';
-              });
-            }
             
             // Errors if any
             if (summary.errors && summary.errors.length > 0) {
@@ -129,14 +136,24 @@ jobs:
             // Comics with new content
             if (summary.comicsWithNewContent && summary.comicsWithNewContent.length > 0) {
               markdown += '### 📰 Comics with New Content\n\n';
-              markdown += '| Comic | New Strips | Latest Date | Source |\n';
-              markdown += '|-------|------------|-------------|--------|\n';
-              summary.comicsWithNewContent.slice(0, 20).forEach(comic => {
-                markdown += `| ${comic.name} | ${comic.newStrips} | ${comic.latestDate} | ${comic.scraper} |\n`;
-              });
-              if (summary.comicsWithNewContent.length > 20) {
-                markdown += `\n_...and ${summary.comicsWithNewContent.length - 20} more comics with updates_\n`;
+              
+              // Show first 50 comics in a table
+              if (summary.comicsWithNewContent.length > 0) {
+                markdown += '| Comic | New Strips | Latest Date | Source |\n';
+                markdown += '|-------|------------|-------------|--------|\n';
+                summary.comicsWithNewContent.slice(0, 50).forEach(comic => {
+                  markdown += `| ${comic.name} | ${comic.newStrips} | ${comic.latestDate} | ${comic.scraper} |\n`;
+                });
               }
+              
+              // If more than 50, list the rest as simple text
+              if (summary.comicsWithNewContent.length > 50) {
+                markdown += `\n#### Additional Comics with Updates:\n\n`;
+                summary.comicsWithNewContent.slice(50).forEach(comic => {
+                  markdown += `- ${comic.name} (${comic.newStrips} new)\n`;
+                });
+              }
+              
               markdown += '\n';
             }
             
