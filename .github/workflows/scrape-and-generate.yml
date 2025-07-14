@@ -53,18 +53,15 @@ jobs:
       - name: Run scraper and generator
         id: scraper
         run: |
-          # Run scraper and capture output
-          node _generator/bin --scrape --generate --verbose 2>&1 | tee scraper-output.log
+          # Change to generator directory
+          cd _generator
           
-          # Extract summary JSON if present (using awk for more robust extraction)
-          if grep -q "::GITHUB_ACTIONS_SUMMARY::" scraper-output.log; then
-            awk -F'::GITHUB_ACTIONS_SUMMARY::' '/::GITHUB_ACTIONS_SUMMARY::/{print $2}' scraper-output.log > summary.json
-            # Check if summary.json has content
-            if [ -s summary.json ]; then
-              echo "has_summary=true" >> $GITHUB_OUTPUT
-            else
-              echo "has_summary=false" >> $GITHUB_OUTPUT
-            fi
+          # Run scraper and generator
+          node bin --scrape --generate --verbose
+          
+          # Check if summary file was created
+          if [ -f "scraper-summary.json" ]; then
+            echo "has_summary=true" >> $GITHUB_OUTPUT
           else
             echo "has_summary=false" >> $GITHUB_OUTPUT
           fi
@@ -75,20 +72,16 @@ jobs:
         with:
           script: |
             const fs = require('fs');
+            const path = require('path');
             
-            // Check if summary.json exists and has content
-            if (!fs.existsSync('summary.json')) {
-              console.log('No summary.json file found');
+            // Read summary from the file created by the scraper
+            const summaryPath = path.join('_generator', 'scraper-summary.json');
+            if (!fs.existsSync(summaryPath)) {
+              console.log('No scraper-summary.json file found');
               return;
             }
             
-            const summaryContent = fs.readFileSync('summary.json', 'utf8').trim();
-            if (!summaryContent) {
-              console.log('summary.json is empty');
-              return;
-            }
-            
-            const summary = JSON.parse(summaryContent);
+            const summary = JSON.parse(fs.readFileSync(summaryPath, 'utf8'));
             
             let markdown = '## 📊 Comics RSS Scraping Summary\n\n';
             
@@ -137,23 +130,11 @@ jobs:
             if (summary.comicsWithNewContent && summary.comicsWithNewContent.length > 0) {
               markdown += '### 📰 Comics with New Content\n\n';
               
-              // Show first 50 comics in a table
-              if (summary.comicsWithNewContent.length > 0) {
-                markdown += '| Comic | New Strips | Latest Date | Source |\n';
-                markdown += '|-------|------------|-------------|--------|\n';
-                summary.comicsWithNewContent.slice(0, 50).forEach(comic => {
-                  markdown += `| ${comic.name} | ${comic.newStrips} | ${comic.latestDate} | ${comic.scraper} |\n`;
-                });
-              }
-              
-              // If more than 50, list the rest as simple text
-              if (summary.comicsWithNewContent.length > 50) {
-                markdown += `\n#### Additional Comics with Updates:\n\n`;
-                summary.comicsWithNewContent.slice(50).forEach(comic => {
-                  markdown += `- ${comic.name} (${comic.newStrips} new)\n`;
-                });
-              }
-              
+              markdown += '| Comic | New Strips | Latest Date | Source |\n';
+              markdown += '|-------|------------|-------------|--------|\n';
+              summary.comicsWithNewContent.forEach(comic => {
+                markdown += `| ${comic.name} | ${comic.newStrips} | ${comic.latestDate} | ${comic.scraper} |\n`;
+              });
               markdown += '\n';
             }
             

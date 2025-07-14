@@ -178,7 +178,24 @@ async function main(options) {
 	
 	// Output JSON summary for GitHub Actions
 	if (process.env.GITHUB_ACTIONS && scrape) {
-		// Create a summary focused on errors and comic updates
+		// Write summary to a file instead of stdout
+		const fs = require('fs')
+		const path = require('path')
+		
+		// Create a compact summary for GitHub Actions
+		// First, collect only comics with new content
+		const allComicsWithNewContent = scrapeStats
+			.flatMap(scraper => scraper.comicDetails
+				.filter(comic => comic.newStrips > 0)
+				.map(comic => ({
+					name: comic.name,
+					newStrips: comic.newStrips,
+					latestDate: comic.latestDate,
+					scraper: scraper.scraperName
+				}))
+			)
+			.sort((a, b) => b.newStrips - a.newStrips)
+		
 		const summary = {
 			totalTime: ((new Date() - startTime) / 1000).toFixed(1),
 			scrapers: {
@@ -190,7 +207,7 @@ async function main(options) {
 				total: scrapeStats.reduce((sum, s) => sum + s.comicCount, 0),
 				newStrips: scrapeStats.reduce((sum, s) => sum + s.newStrips, 0)
 			},
-			// Simple scraper summary without detailed logs
+			// Simple scraper summary
 			details: scrapeStats.map(s => ({
 				scraperName: s.scraperName,
 				comicCount: s.comicCount,
@@ -199,20 +216,14 @@ async function main(options) {
 			})),
 			// Keep ALL errors - they're important
 			errors: scrapeErrors,
-			// Focus on comics with new content - this is what matters
-			comicsWithNewContent: scrapeStats
-				.flatMap(scraper => scraper.comicDetails
-					.filter(comic => comic.newStrips > 0)
-					.map(comic => ({
-						name: comic.name,
-						newStrips: comic.newStrips,
-						latestDate: comic.latestDate,
-						scraper: scraper.scraperName
-					}))
-				)
-				.sort((a, b) => b.newStrips - a.newStrips)
+			// All comics with new content
+			comicsWithNewContent: allComicsWithNewContent
 		}
-		console.log('::GITHUB_ACTIONS_SUMMARY::' + JSON.stringify(summary))
+		
+		// Write summary to file
+		const summaryPath = path.join(process.cwd(), 'scraper-summary.json')
+		fs.writeFileSync(summaryPath, JSON.stringify(summary, null, 2))
+		console.log(`\n✅ Summary written to ${summaryPath}`)
 	}
 
 	const exitCode = scrapeErrors.length === scraperNames.length ? 1 : 0 // this will exit non-zero if some scrapers worked
