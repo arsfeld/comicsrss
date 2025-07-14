@@ -3,7 +3,9 @@ const config = require('../config.js')
 
 module.exports = seriesObject => {
 	if (! seriesObject || ! seriesObject.strips || ! seriesObject.strips.length) {
-		console.log(seriesObject.basename + ': Expected seriesObject.strips to be a non-empty array')
+		if (global.VERBOSE) {
+			console.log(seriesObject.basename + ': No strips available for RSS feed generation')
+		}
 		return null
 	}
 

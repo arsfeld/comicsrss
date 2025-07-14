@@ -2,6 +2,8 @@ const fetch = require('./lib/fetch.js')
 const { query_html } = require('./lib/query-html.js')
 
 module.exports = async function main(cachedSeriesObjects) {
+	// Note: Dilbert moved to subscription platforms (X.com, Locals.com) and 
+	// no longer provides free comics on dilbert.com as of 2023
 	const html = await fetch('https://dilbert.com')
 	const $ = query_html(html)
 
