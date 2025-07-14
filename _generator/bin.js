@@ -75,8 +75,15 @@ async function main(options) {
 			try {
 				const result = await runScraper(scraperName)
 				scrapeResults.push({ status: 'fulfilled', value: result })
-			} catch (reason) {
-				scrapeResults.push({ status: 'rejected', reason })
+			} catch (error) {
+				// Create a detailed error object
+				const errorDetail = {
+					scraperName,
+					message: error.message || error.toString(),
+					stack: error.stack,
+					logs: [] // Logs would be captured if we had access to them
+				}
+				scrapeResults.push({ status: 'rejected', reason: errorDetail })
 			}
 		}
 		
@@ -183,7 +190,13 @@ async function main(options) {
 				newStrips: scrapeStats.reduce((sum, s) => sum + s.newStrips, 0)
 			},
 			details: scrapeStats,
-			errors: scrapeErrors.map(e => e.message || e.toString()),
+			errors: scrapeErrors,
+			scraperLogs: scrapeStats.reduce((acc, scraper) => {
+				if (scraper.logs && scraper.logs.length > 0) {
+					acc[scraper.scraperName] = scraper.logs
+				}
+				return acc
+			}, {}),
 			comicsWithNewContent: scrapeStats
 				.flatMap(scraper => scraper.comicDetails
 					.filter(comic => comic.newStrips > 0)
@@ -232,8 +245,34 @@ async function runScraper(scraperName) {
 	const cachedComicCount = Object.keys(cachedSeriesObjects).length
 	const cachedStripCount = Object.values(cachedSeriesObjects).reduce((sum, obj) => sum + (obj.strips?.length || 0), 0)
 	
-	const scraper = require(`./scrapers/${scraperName}.js`)
-	const newSeriesObjects = await scraper(cachedSeriesObjects)
+	// Track scraper-specific logs
+	const scraperLogs = []
+	const originalConsoleLog = console.log
+	const originalConsoleError = console.error
+	
+	// Capture logs during scraper execution
+	console.log = (...args) => {
+		const message = args.join(' ')
+		if (message.includes(scraperName + ':') || message.includes('Error') || message.includes('error')) {
+			scraperLogs.push({ type: 'log', message })
+		}
+		originalConsoleLog(...args)
+	}
+	
+	console.error = (...args) => {
+		scraperLogs.push({ type: 'error', message: args.join(' ') })
+		originalConsoleError(...args)
+	}
+	
+	let newSeriesObjects
+	try {
+		const scraper = require(`./scrapers/${scraperName}.js`)
+		newSeriesObjects = await scraper(cachedSeriesObjects)
+	} finally {
+		// Restore original console methods
+		console.log = originalConsoleLog
+		console.error = originalConsoleError
+	}
 	if (Array.isArray(newSeriesObjects)) {
 		throw new Error('Did not expect resulting seriesObjects variable to be an array.')
 	}
@@ -279,7 +318,8 @@ async function runScraper(scraperName) {
 		stripCount: newStripCount,
 		newStrips: newStripCount - cachedStripCount,
 		timeTaken: parseFloat(timeTaken),
-		comicDetails
+		comicDetails,
+		logs: scraperLogs
 	}
 }
 

@@ -97,11 +97,31 @@ jobs:
               markdown += '\n';
             }
             
+            // Scraper logs if any
+            if (summary.scraperLogs && Object.keys(summary.scraperLogs).length > 0) {
+              markdown += '### 📋 Scraper Logs\n\n';
+              Object.entries(summary.scraperLogs).forEach(([scraper, logs]) => {
+                markdown += `#### ${scraper}\n\n`;
+                logs.forEach(log => {
+                  const icon = log.type === 'error' ? '❌' : '📝';
+                  markdown += `${icon} ${log.message}\n`;
+                });
+                markdown += '\n';
+              });
+            }
+            
             // Errors if any
             if (summary.errors && summary.errors.length > 0) {
               markdown += '### ❌ Errors\n\n';
               summary.errors.forEach(error => {
-                markdown += `- ${error}\n`;
+                if (typeof error === 'object') {
+                  markdown += `**${error.scraperName || 'Unknown'}**: ${error.message}\n`;
+                  if (error.stack) {
+                    markdown += '<details><summary>Stack trace</summary>\n\n```\n' + error.stack + '\n```\n</details>\n';
+                  }
+                } else {
+                  markdown += `- ${error}\n`;
+                }
               });
               markdown += '\n';
             }

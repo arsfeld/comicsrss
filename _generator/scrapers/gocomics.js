@@ -42,9 +42,41 @@ async function parse_list_html(base, path, is_political) {
 	}
 	
 	try {
-		const array_that_gets_pushed = JSON.parse(pushMatch[1]) // [ 1, '32:[ ... ]' ]
-		const improve_this_var_name = JSON.parse(array_that_gets_pushed[1].replace(/^\d+:/, '')) // [ [ '$', 'script', null, { dangerouslySetInnerHTML: { ... }, ... } ], [ '$', 'section', null, { className: '...', children: [ ... ]} ] ]
-		const { /* categories, */ groupedFeatures } = improve_this_var_name[1][3].children[0][3]
+		console.log(`gocomics: Found push pattern, attempting to parse...`)
+		console.log(`gocomics: Push match content (first 200 chars): ${pushMatch[1].substring(0, 200)}...`)
+		
+		const array_that_gets_pushed = JSON.parse(pushMatch[1]) // [ 1, '2f:[ ... ]' ]
+		
+		// Extract the JSON string after the prefix (e.g., "2f:")
+		const jsonString = array_that_gets_pushed[1].replace(/^[a-f0-9]+:/, '')
+		console.log(`gocomics: Cleaned JSON string (first 200 chars): ${jsonString.substring(0, 200)}...`)
+		
+		const improve_this_var_name = JSON.parse(jsonString) // [ [ '$', 'script', null, { dangerouslySetInnerHTML: { ... }, ... } ], [ '$', 'section', null, { className: '...', children: [ ... ]} ] ]
+		
+		// Navigate the structure more carefully
+		if (!improve_this_var_name[1] || !improve_this_var_name[1][3]) {
+			console.error(`gocomics: Unexpected structure in ${path}`)
+			return []
+		}
+		
+		const section = improve_this_var_name[1]
+		const sectionProps = section[3]
+		
+		// Find groupedFeatures in the children
+		let groupedFeatures = null
+		if (sectionProps.children && Array.isArray(sectionProps.children)) {
+			for (const child of sectionProps.children) {
+				if (child && child[3] && child[3].groupedFeatures) {
+					groupedFeatures = child[3].groupedFeatures
+					break
+				}
+			}
+		}
+		
+		if (!groupedFeatures) {
+			console.error(`gocomics: Could not find groupedFeatures in ${path}`)
+			return []
+		}
 
 		const item_list = groupedFeatures.flatMap(group => group.items)
 
