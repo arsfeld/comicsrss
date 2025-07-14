@@ -115,8 +115,8 @@ module.exports = async function main(cached_series_objects) {
 		}
 
 		const fetchStripWithDelay = async (date, index) => {
-			// Stagger requests to respect rate limits while still being faster than sequential
-			await new Promise(resolve => setTimeout(resolve, rate_limit * index / 3))
+			// Stagger requests to respect rate limits
+			await new Promise(resolve => setTimeout(resolve, rate_limit * index))
 
 			const page_url = `${ base }/${ slug }/${ date.replace(/-/g, '/') }`
 			const html = await fetch2(page_url)

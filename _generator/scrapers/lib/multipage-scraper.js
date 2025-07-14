@@ -14,7 +14,7 @@ module.exports = async function multipageScraper({ getSeriesObjects, getStrip, c
 	let stats = { processed: 0, cacheHits: 0, newStrips: 0, filtered: 0, errors: 0 }
 	const processComic = async (basename, index) => {
 		// Stagger requests to avoid overwhelming the server
-		await new Promise(resolve => setTimeout(resolve, index * 100))
+		await new Promise(resolve => setTimeout(resolve, index * 300))
 		
 		stats.processed++
 		const newSeriesObject = newSeriesObjects[basename]
@@ -48,12 +48,16 @@ module.exports = async function multipageScraper({ getSeriesObjects, getStrip, c
 	}
 
 	// Process comics in parallel with limited concurrency
-	const BATCH_SIZE = 5 // Process 5 comics at a time
+	const BATCH_SIZE = 3 // Process 3 comics at a time to avoid rate limits
 	for (let i = 0; i < seriesObjectsKeys.length; i += BATCH_SIZE) {
 		const batch = seriesObjectsKeys.slice(i, i + BATCH_SIZE)
 		await Promise.allSettled(
 			batch.map((basename, index) => processComic(basename, index))
 		)
+		// Add delay between batches
+		if (i + BATCH_SIZE < seriesObjectsKeys.length) {
+			await new Promise(resolve => setTimeout(resolve, 500))
+		}
 	}
 	
 	// Print statistics for scrapers using this module

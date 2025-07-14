@@ -68,7 +68,18 @@ async function main(options) {
 	if (scrape) {
 		console.log(`\n📊 Starting to scrape ${scraperNames.length} scrapers...\n`)
 		const scrapeStartTime = new Date()
-		const scrapeResults = await Promise.allSettled(scraperNames.map(runScraper))
+		
+		// Run scrapers sequentially to avoid overwhelming servers
+		const scrapeResults = []
+		for (const scraperName of scraperNames) {
+			try {
+				const result = await runScraper(scraperName)
+				scrapeResults.push({ status: 'fulfilled', value: result })
+			} catch (reason) {
+				scrapeResults.push({ status: 'rejected', reason })
+			}
+		}
+		
 		const scrapeEndTime = new Date()
 		
 		scrapeErrors = scrapeResults
