@@ -10,10 +10,13 @@ module.exports = async function multipageScraper({ getSeriesObjects, getStrip, c
 	if (global.DEBUG) {
 		seriesObjectsKeys = seriesObjectsKeys.slice(0, 10)
 	}
+	
+	let stats = { processed: 0, cacheHits: 0, newStrips: 0, filtered: 0, errors: 0 }
 	const processComic = async (basename, index) => {
 		// Stagger requests to avoid overwhelming the server
 		await new Promise(resolve => setTimeout(resolve, index * 100))
 		
+		stats.processed++
 		const newSeriesObject = newSeriesObjects[basename]
 		const cachedSeriesObject = cachedSeriesObjects[basename]
 		const cachedStrips = cachedSeriesObject && cachedSeriesObject.strips || []
@@ -22,13 +25,17 @@ module.exports = async function multipageScraper({ getSeriesObjects, getStrip, c
 		}
 
 		try {
-			const finalSeriesObject = await getStrips(getStrip, newSeriesObject, cachedStrips)
+			const result = await getStrips(getStrip, newSeriesObject, cachedStrips, stats)
 
-			if (finalSeriesObject) {
+			if (result && result.finalSeriesObject) {
 				// insert the series into into the cache, or overwrite the cached series
-				cachedSeriesObjects[basename] = finalSeriesObject
+				cachedSeriesObjects[basename] = result.finalSeriesObject
+				if (result.newStripsCount === 0 && cachedSeriesObject) {
+					stats.cacheHits++
+				}
 			}
 		} catch (err) {
+			stats.errors++
 			if (global.VERBOSE) {
 				console.error(err)
 			}
@@ -48,17 +55,26 @@ module.exports = async function multipageScraper({ getSeriesObjects, getStrip, c
 			batch.map((basename, index) => processComic(basename, index))
 		)
 	}
+	
+	// Print statistics for scrapers using this module
+	const scraperName = cachedSeriesObjects._scraperName || 'scraper'
+	console.log(`${scraperName}: Processed ${stats.processed} comics - Cache hits: ${stats.cacheHits}, New strips: ${stats.newStrips}${stats.filtered > 0 ? `, Filtered: ${stats.filtered}` : ''}${stats.errors > 0 ? `, Errors: ${stats.errors}` : ''}`)
+	
+	// Clean up temporary property
+	delete cachedSeriesObjects._scraperName
 
 	return cachedSeriesObjects
 }
 
-async function getStrips(getStrip, newSeriesObject, cachedStrips) {
+async function getStrips(getStrip, newSeriesObject, cachedStrips, stats) {
 	const strips = []
 	// Filter out any cached strips with future dates
 	const today = new Date().toISOString().slice(0, 10)
 	const validCachedStrips = cachedStrips.filter(strip => strip.date <= today)
 	if (cachedStrips.length > validCachedStrips.length) {
-		console.log(`Filtered out ${cachedStrips.length - validCachedStrips.length} future-dated strips`)
+		const filtered = cachedStrips.length - validCachedStrips.length
+		stats.filtered += filtered
+		console.log(`Filtered out ${filtered} future-dated strips`)
 	}
 	const previousUrls = validCachedStrips.map(strip => strip.url)
 
@@ -83,11 +99,15 @@ async function getStrips(getStrip, newSeriesObject, cachedStrips) {
 				// If no new info was gathered, then avoid changing the cached copy
 				return null
 			}
-			return Object.assign(newSeriesObject, {
-				strips: strips.concat(validCachedStrips),
-				imageUrl: strips[0].headerImageUrl,
-				author: strips[0].author,
-			})
+			stats.newStrips += strips.length
+			return {
+				finalSeriesObject: Object.assign(newSeriesObject, {
+					strips: strips.concat(validCachedStrips),
+					imageUrl: strips[0].headerImageUrl,
+					author: strips[0].author,
+				}),
+				newStripsCount: strips.length
+			}
 		})
 
 	async function getStripPage(stripPageUrl) {

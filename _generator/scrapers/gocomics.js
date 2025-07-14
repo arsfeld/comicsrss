@@ -63,9 +63,12 @@ module.exports = async function main(cached_series_objects) {
 	if (global.VERBOSE) {
 		console.log(`gocomics: found ${ series_object_entries.length } entries`)
 	}
+	
+	let stats = { processed: 0, cacheHits: 0, newStrips: 0, filtered: 0 }
 
 	for (const [ slug, series_object ] of series_object_entries) {
 		await new Promise(resolve => setTimeout(resolve, rate_limit))
+		stats.processed++
 
 		if (global.VERBOSE) {
 			console.log('gocomics: ' + slug)
@@ -77,11 +80,18 @@ module.exports = async function main(cached_series_objects) {
 		const cachedStrips = cached_series_objects[slug]?.strips || []
 		const validCachedStrips = cachedStrips.filter(strip => strip.date <= today)
 		if (cachedStrips.length > validCachedStrips.length) {
+			stats.filtered += cachedStrips.length - validCachedStrips.length
 			console.log(`gocomics: ${slug}: Filtered out ${cachedStrips.length - validCachedStrips.length} future-dated strips`)
 		}
 		const most_recent_cached_strip_date = validCachedStrips[0]?.date || '0000-00-00'
 
 		const new_strip_dates = list_of_recent_strip_dates.filter(date => date > most_recent_cached_strip_date).reverse()
+		
+		if (new_strip_dates.length === 0) {
+			stats.cacheHits++
+		} else {
+			stats.newStrips += new_strip_dates.length
+		}
 
 		if (global.VERBOSE) {
 			console.log(`gocomics: ${ slug }: ${ new_strip_dates.length } new strips: ${ new_strip_dates.join(', ') }`)
@@ -120,6 +130,9 @@ module.exports = async function main(cached_series_objects) {
 			...validCachedStrips,
 		]
 	}
+	
+	// Print statistics
+	console.log(`gocomics: Processed ${stats.processed} comics - Cache hits: ${stats.cacheHits}, New strips: ${stats.newStrips}${stats.filtered > 0 ? `, Filtered: ${stats.filtered}` : ''}`)
 
 	return Object.fromEntries(series_object_entries)
 }

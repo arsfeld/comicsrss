@@ -64,10 +64,9 @@ async function main(options) {
 		scraperNames = [ scrape ]
 	}
 	let scrapeErrors = []
+	let scrapeStats = []
 	if (scrape) {
-		if (global.VERBOSE) {
-			console.log(`Starting to scrape ${scraperNames.length} scrapers in parallel...`)
-		}
+		console.log(`\n📊 Starting to scrape ${scraperNames.length} scrapers...\n`)
 		const scrapeStartTime = new Date()
 		const scrapeResults = await Promise.allSettled(scraperNames.map(runScraper))
 		const scrapeEndTime = new Date()
@@ -75,11 +74,26 @@ async function main(options) {
 		scrapeErrors = scrapeResults
 			.filter(({ status }) => status === 'rejected')
 			.map(({ reason }) => reason)
+		
+		scrapeStats = scrapeResults
+			.filter(({ status }) => status === 'fulfilled')
+			.map(({ value }) => value)
 
-		if (global.VERBOSE) {
-			console.log(`Scraping completed in ${(scrapeEndTime - scrapeStartTime) / 1000} seconds`)
-			console.log(`Successful scrapers: ${scrapeResults.filter(r => r.status === 'fulfilled').length}/${scraperNames.length}`)
+		// Print summary
+		console.log('\n' + '─'.repeat(60))
+		console.log('📈 SCRAPING SUMMARY')
+		console.log('─'.repeat(60))
+		console.log(`⏱️  Total time: ${((scrapeEndTime - scrapeStartTime) / 1000).toFixed(1)}s`)
+		console.log(`✅ Successful: ${scrapeStats.length}/${scraperNames.length} scrapers`)
+		if (scrapeErrors.length > 0) {
+			console.log(`❌ Failed: ${scrapeErrors.length} scrapers`)
 		}
+		
+		const totalComics = scrapeStats.reduce((sum, s) => sum + s.comicCount, 0)
+		const totalNewStrips = scrapeStats.reduce((sum, s) => sum + s.newStrips, 0)
+		console.log(`📚 Total comics: ${totalComics}`)
+		console.log(`🆕 New strips: ${totalNewStrips}`)
+		console.log('─'.repeat(60))
 	}
 	if (generate) {
 		const siteGenerator = require('./site-generator/index.js')
@@ -90,12 +104,12 @@ async function main(options) {
 	}
 
 
-	if (global.VERBOSE) {
-		console.log(`Finished in ${(new Date() - startTime) / 1000} seconds`)
-		console.log(`Scrape errors: ${scrapeErrors.length}`)
+	if (scrapeErrors.length > 0) {
+		console.log('\n❌ ERRORS:')
+		scrapeErrors.forEach(e => console.error(e))
 	}
 
-	scrapeErrors.forEach(e => console.log(e))
+	console.log(`\n✨ Total time: ${((new Date() - startTime) / 1000).toFixed(1)}s\n`)
 
 	const exitCode = scrapeErrors.length === scraperNames.length ? 1 : 0 // this will exit non-zero if some scrapers worked
 	process.exit(exitCode)
@@ -129,7 +143,11 @@ function getSeriesObjectsPath(scraperName) {
 
 async function runScraper(scraperName) {
 	if (global.VERBOSE) console.log('Scraping ' + scraperName)
+	const startTime = new Date()
 	const cachedSeriesObjects = readSeriesObjectsFile(scraperName)
+	const cachedComicCount = Object.keys(cachedSeriesObjects).length
+	const cachedStripCount = Object.values(cachedSeriesObjects).reduce((sum, obj) => sum + (obj.strips?.length || 0), 0)
+	
 	const scraper = require(`./scrapers/${scraperName}.js`)
 	const newSeriesObjects = await scraper(cachedSeriesObjects)
 	if (Array.isArray(newSeriesObjects)) {
@@ -146,6 +164,22 @@ async function runScraper(scraperName) {
 	})
 
 	writeSeriesObjectsFile(scraperName, verifiedSeriesObjects)
+	
+	// Calculate statistics
+	const endTime = new Date()
+	const newComicCount = Object.keys(verifiedSeriesObjects).length
+	const newStripCount = Object.values(verifiedSeriesObjects).reduce((sum, obj) => sum + (obj.strips?.length || 0), 0)
+	const timeTaken = ((endTime - startTime) / 1000).toFixed(1)
+	
+	console.log(`✓ ${scraperName}: ${newComicCount} comics, ${newStripCount - cachedStripCount} new strips (${timeTaken}s)`)
+	
+	return {
+		scraperName,
+		comicCount: newComicCount,
+		stripCount: newStripCount,
+		newStrips: newStripCount - cachedStripCount,
+		timeTaken: parseFloat(timeTaken)
+	}
 }
 
 

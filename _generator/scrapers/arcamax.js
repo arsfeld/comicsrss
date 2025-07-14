@@ -117,4 +117,7 @@ function humanReadableDateToIsoDate(mmmDay) {
 	return yyyymmdd
 }
 
-module.exports = cachedSeriesObjects => multipageScraper({ getSeriesObjects, getStrip, cachedSeriesObjects })
+module.exports = cachedSeriesObjects => {
+	cachedSeriesObjects._scraperName = 'arcamax'
+	return multipageScraper({ getSeriesObjects, getStrip, cachedSeriesObjects })
+}
