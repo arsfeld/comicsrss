@@ -18,15 +18,21 @@
 				<img src="{{root}}/static/comicsrss-logo.png" class="logo" alt="">
 				<span class="nav-header">Comics RSS</span>
 			</a>
+			<div class="nav-links">
+				<a href="{{root}}/" {{if subtemplate === 'index'}}class="active"{{/if}}>Browse</a>
+				<a href="{{root}}/discover.html" {{if subtemplate === 'discover'}}class="active"{{/if}}>Discover</a>
+			</div>
 		</nav>
 	</div>
 
 	{{include './'+subtemplate+'-subtemplate.html'}}
 
-	<footer class="text-center">
-		<a href="{{config.github.url}}">GitHub</a> -
-		Made by <a href="https://www.josephdykstra.com">Joseph Dykstra</a> -
-		Forked by <a href="https://github.com/{{config.github.repo.split('/')[0]}}">{{config.github.repo.split('/')[0]}}</a>
-	</footer>
+	<div class="container">
+		<footer class="text-center">
+			<a href="{{config.github.url}}">GitHub</a> -
+			Made by <a href="https://www.josephdykstra.com">Joseph Dykstra</a> -
+			Forked by <a href="https://github.com/{{config.github.repo.split('/')[0]}}">{{config.github.repo.split('/')[0]}}</a>
+		</footer>
+	</div>
 </body>
 </html>

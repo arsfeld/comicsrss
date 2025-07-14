@@ -1,5 +1,5 @@
-<section id="intro">
-	<div class="container">
+<div class="container">
+	<section id="intro">
 		<p>
 			If you use an <a href="https://www.digitaltrends.com/computing/what-is-an-rss-feed/">RSS</a>
 			reader, and like reading comics, then this is the site for you!
@@ -11,93 +11,45 @@
 			If you enjoy the concept, please consider supporting the original creator through
 			<a href="https://paypal.me/artskydj">PayPal</a>.
 		</p>
-	</div>
-</section>
+	</section>
 
-<section id="browse">
-	<div class="container">
-		<div class="main-page-header large-margin">Browse</div>
-		<input type="text" id="search" class="search" placeholder="Filter Comics">
+	<section id="all-comics">
+		<h2 class="section-title">Browse All Comics</h2>
+		<div class="view-controls">
+			<input type="text" id="search" class="search" placeholder="Search comics...">
+			<div class="view-toggle">
+				<button class="view-btn active" data-view="grid" onclick="setView('grid')">
+					<span class="icon">⊞</span> Grid
+				</button>
+				<button class="view-btn" data-view="list" onclick="setView('list')">
+					<span class="icon">☰</span> List
+				</button>
+			</div>
+		</div>
+		
+		<div id="comics-container" class="comics-grid-view">
+			<!-- Comics will be inserted here by JavaScript -->
+		</div>
+		
+		<div class="pagination-controls">
+			<button class="pagination-btn" id="prevPage" onclick="changePage(-1)">← Previous</button>
+			<span class="page-info">Page <span id="currentPage">1</span> of <span id="totalPages">1</span></span>
+			<button class="pagination-btn" id="nextPage" onclick="changePage(1)">Next →</button>
+		</div>
 
-		<script>
-			var searchCss = document.createElement('style')
-			document.head.appendChild(searchCss)
-
-			var inputSearch = document.querySelector('input.search')
-
-			inputSearch.addEventListener('input', updateFilter)
-			updateFilter()
-
-			function normalizeSearchString(titleOrAuthor) {
-				return titleOrAuthor
-					.trim()
-					.replace(/&/g, 'and')
-					.toLowerCase()
-					.replace(/\s\s+/g, ' ')
-					.replace(/"/g, '')
-			}
-
-			function updateFilter() {
-				var searchPhrase = normalizeSearchString(inputSearch.value)
-				var cssHideRule = ''
-				if (searchPhrase.length) {
-					cssHideRule = searchPhrase.split(' ').map(wordToSelectorNonHits).join(',') + '{display:none;}'
-					var cssShowSelector = searchPhrase.split(' ').map(wordToSelectorHits).join(',')
-
-					var resultCount = document.querySelectorAll(cssShowSelector).length
-				}
-				searchCss.innerHTML = cssHideRule
-
-				function wordToSelectorNonHits(word) { return 'ul#comics-list>li:not([data-search*="' + word + '"])' }
-				function wordToSelectorHits(word) {    return 'ul#comics-list>li[data-search*="' + word + '"]' }
-			}
-		</script>
-
-		<ul id="comics-list" tabindex="-1">
-			{{each seriesObjects seriesObject}}{{if language === (seriesObject.language || 'eng')}}
-				<li data-search="{{@ seriesObject.title.toLowerCase() }} {{@ (seriesObject.author || '').toLowerCase() }}">
-					<div class="comic-info">
-						<div class="ellipsis" title="{{@ seriesObject.title }}{{@ seriesObject.author ? ' by ' + seriesObject.author : '' }}">
-							{{@ seriesObject.title }} <small>{{@ seriesObject.author ? 'by ' + seriesObject.author : '' }}</small>
-						</div>
-						<div class="comic-meta">
-							{{if seriesObject.strips && seriesObject.strips.length > 0}}
-								<span class="strip-count">{{seriesObject.strips.length}} strips</span>
-								<span class="last-update">Last: {{seriesObject.strips[0].date}}</span>
-							{{else}}
-								<span class="no-strips">No strips available</span>
-							{{/if}}
-						</div>
-					</div>
-					<div class="actions">
-						<a href="{{config.github.previewerUrl}}?url={{ encodeURIComponent('/rss/' + seriesObject.basename + '.rss') }}" target="_blank">
-							<img src="./static/external_sm.png" class="icon" alt="">
-							Preview
-						</a>
-						<a href="./rss/{{ encodeURI(seriesObject.basename) }}.rss" onclick="copy(this, event)">
-							<img src="../static/rss_sm.png" class="icon rss-icon" alt="">
-							<span class="status">Copy RSS URL</span>
-						</a>
-						<a href="{{ seriesObject.url }}" target="_blank">
-							<img src="./static/link_sm.png" class="icon" alt="">
-							Source
-						</a>
-					</div>
-				</li>
-			{{/if}}{{/each}}
-		</ul>
-
-		{{if language === 'eng'}}
-			<b>English</b>
-			&mdash;
-			<a href="./espanol.html">Spanish</a>
-		{{else if language === 'spa'}}
-			<a href="./">English</a>
-			&mdash;
-			<b>Spanish</b>
-		{{/if}}
-	</div>
-</section>
+		<div class="language-selector">
+			{{if language === 'eng'}}
+				<b>English</b>
+				&mdash;
+				<a href="./espanol.html">Spanish</a>
+			{{else if language === 'spa'}}
+				<a href="./">English</a>
+				&mdash;
+				<b>Spanish</b>
+			{{/if}}
+		</div>
+	</section>
+</div>
 
 
 {{if false}}
@@ -149,34 +101,544 @@
 {{/if}}
 
 
-<script>
+<style>
+/* Grid/List View Styles */
+.section-title {
+	font-size: 28px;
+	font-weight: 600;
+	margin: 0 0 24px 0;
+	color: #333;
+}
 
+.view-controls {
+	display: flex;
+	gap: 16px;
+	margin-bottom: 24px;
+	align-items: center;
+}
 
-	function copyToClipboard(text) {
-		var textArea = document.createElement('textarea')
-		textArea.className = 'copyable'
-		textArea.value = text
-		document.body.appendChild(textArea)
-		textArea.select()
-		var wasSuccessful = document.execCommand('copy')
-		document.body.removeChild(textArea)
-		return wasSuccessful
+.view-controls .search {
+	flex: 1;
+	margin-bottom: 0;
+}
+
+.view-toggle {
+	display: flex;
+	gap: 4px;
+	background: #f0f0f0;
+	padding: 4px;
+	border-radius: 6px;
+}
+
+.view-btn {
+	padding: 6px 12px;
+	border: none;
+	background: transparent;
+	border-radius: 4px;
+	cursor: pointer;
+	font-size: 14px;
+	display: flex;
+	align-items: center;
+	gap: 4px;
+	transition: all 0.2s;
+}
+
+.view-btn.active {
+	background: white;
+	box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+/* Grid View */
+.comics-grid-view {
+	display: flex;
+	flex-direction: column;
+	gap: 20px;
+}
+
+.comic-grid-item {
+	background: white;
+	border-radius: 8px;
+	overflow: hidden;
+	box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+	transition: all 0.2s;
+	display: flex;
+	flex-direction: column;
+}
+
+.comic-grid-item:hover {
+	box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
+.comic-grid-item .comic-preview-wrapper {
+	height: 400px;
+	background: #f8f9fa;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	position: relative;
+	overflow: hidden;
+}
+
+.comic-preview-image {
+	width: 100%;
+	height: 100%;
+	min-height: inherit;
+	background-size: contain;
+	background-position: center top;
+	background-repeat: no-repeat;
+	transition: opacity 0.3s;
+	opacity: 0;
+	cursor: pointer;
+	position: absolute;
+	top: 0;
+	left: 0;
+}
+
+.comic-preview-image.loaded {
+	opacity: 1;
+}
+
+.comic-preview-image.no-preview {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	opacity: 1;
+}
+
+.comic-preview-placeholder {
+	width: 100%;
+	height: 100%;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	color: #999;
+	font-size: 14px;
+}
+
+.comic-grid-info {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	padding: 16px;
+}
+
+.comic-grid-info .comic-details {
+	flex: 1;
+	min-width: 0;
+}
+
+.comic-grid-info .comic-title {
+	font-size: 16px;
+	font-weight: 600;
+	margin: 0 0 4px 0;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.comic-grid-info .comic-author {
+	font-size: 13px;
+	color: #666;
+	margin: 0;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.comic-grid-actions {
+	padding: 0;
+	display: flex;
+	gap: 8px;
+	flex-shrink: 0;
+}
+
+.btn-small {
+	padding: 6px 12px;
+	font-size: 12px;
+	background: white;
+	color: #0066cc;
+	border: 1px solid #0066cc;
+	border-radius: 4px;
+	text-decoration: none;
+	transition: all 0.2s;
+}
+
+.btn-small:hover {
+	background: #f0f7ff;
+	text-decoration: none;
+}
+
+/* List View */
+.comics-list-view {
+	display: block;
+}
+
+.comics-list-view .comic-grid-item {
+	display: none;
+}
+
+.comics-list-view .comic-list-item {
+	display: flex !important;
+	background-color: white;
+	padding: 20px;
+	border-radius: 8px;
+	margin-bottom: 12px;
+	box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+	justify-content: space-between;
+	align-items: center;
+}
+
+.language-selector {
+	margin-top: 24px;
+	text-align: center;
+}
+
+/* Expanded comic view */
+.comic-grid-item.expanded-item {
+	position: relative;
+	z-index: 100;
+}
+
+.comic-preview-wrapper.expanded {
+	position: fixed;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	width: 95vw;
+	height: 90vh;
+	max-width: none;
+	max-height: none;
+	background: rgba(0, 0, 0, 0.95);
+	cursor: zoom-out;
+	z-index: 1000;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 20px;
+	box-sizing: border-box;
+}
+
+.comic-preview-wrapper.expanded .comic-preview-image {
+	width: 100%;
+	height: 100%;
+	background-size: contain;
+	background-position: center;
+	background-repeat: no-repeat;
+	position: relative;
+}
+
+/* Pagination */
+.pagination-controls {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	gap: 20px;
+	margin: 32px 0;
+	padding: 20px;
+	background: white;
+	border-radius: 8px;
+	box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.pagination-btn {
+	padding: 10px 20px;
+	background: white;
+	color: #0066cc;
+	border: 1px solid #0066cc;
+	border-radius: 6px;
+	cursor: pointer;
+	font-size: 14px;
+	font-weight: 500;
+	transition: all 0.2s;
+}
+
+.pagination-btn:hover:not(:disabled) {
+	background: #0066cc;
+	color: white;
+}
+
+.pagination-btn:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+
+.page-info {
+	font-size: 14px;
+	color: #666;
+	font-weight: 500;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+	.comic-grid-item .comic-preview-wrapper {
+		height: 300px;
 	}
+	
+	.view-controls {
+		flex-direction: column;
+		align-items: stretch;
+	}
+	
+	.view-toggle {
+		justify-content: center;
+	}
+	
+	.pagination-controls {
+		flex-wrap: wrap;
+		gap: 10px;
+	}
+	
+	.pagination-btn {
+		padding: 8px 16px;
+		font-size: 13px;
+	}
+}
 
-	function updateStatus(self) {
-		var status = self.querySelector('.status')
-		status.innerHTML = status.innerHTML.replace('Copy', 'Copied')
+@media (max-width: 480px) {
+	.comic-grid-item .comic-preview-wrapper {
+		height: 250px;
+	}
+}
+</style>
+
+<script>
+// Comics data
+var allComics = [
+	{{each seriesObjects seriesObject}}{{if language === (seriesObject.language || 'eng')}}
+	{
+		basename: '{{@ seriesObject.basename }}',
+		title: '{{@ seriesObject.title.replace(/'/g, "\\'") }}',
+		author: '{{@ (seriesObject.author || "").replace(/'/g, "\\'") }}',
+		hasStrips: {{seriesObject.strips && seriesObject.strips.length > 0}},
+		stripCount: {{seriesObject.strips ? seriesObject.strips.length : 0}},
+		lastUpdate: '{{@ seriesObject.strips && seriesObject.strips.length > 0 ? seriesObject.strips[0].date : "" }}',
+		url: '{{ seriesObject.url }}',
+		searchText: '{{@ seriesObject.title.toLowerCase().replace(/'/g, "\\'") }} {{@ (seriesObject.author || '').toLowerCase().replace(/'/g, "\\'") }}'
+	},
+	{{/if}}{{/each}}
+]
+
+// Pagination variables
+var currentPage = 1
+var itemsPerPage = 20
+var filteredComics = allComics
+var currentView = 'grid'
+
+// Initialize
+document.addEventListener('DOMContentLoaded', function() {
+	renderComics()
+	updatePaginationControls()
+})
+
+// Search functionality
+var inputSearch = document.querySelector('input.search')
+inputSearch.addEventListener('input', handleSearch)
+
+function normalizeSearchString(titleOrAuthor) {
+	return titleOrAuthor
+		.trim()
+		.replace(/&/g, 'and')
+		.toLowerCase()
+		.replace(/\s\s+/g, ' ')
+		.replace(/"/g, '')
+}
+
+function handleSearch() {
+	var searchPhrase = normalizeSearchString(inputSearch.value)
+	
+	if (searchPhrase.length) {
+		var searchWords = searchPhrase.split(' ')
+		filteredComics = allComics.filter(function(comic) {
+			return searchWords.every(function(word) {
+				return comic.searchText.indexOf(word) !== -1
+			})
+		})
+	} else {
+		filteredComics = allComics
+	}
+	
+	currentPage = 1
+	renderComics()
+	updatePaginationControls()
+}
+
+function renderComics() {
+	var container = document.getElementById('comics-container')
+	var start = (currentPage - 1) * itemsPerPage
+	var end = start + itemsPerPage
+	var comicsToShow = filteredComics.slice(start, end)
+	
+	container.innerHTML = ''
+	
+	comicsToShow.forEach(function(comic) {
+		var comicItem = document.createElement('div')
+		comicItem.className = 'comic-item'
+		comicItem.setAttribute('data-search', comic.searchText)
+		comicItem.setAttribute('data-comic', comic.basename)
+		
+		var gridHtml = '<div class="comic-grid-item">'
+		gridHtml += '<div class="comic-preview-wrapper">'
+		if (comic.hasStrips) {
+			gridHtml += '<div class="comic-preview-image" data-src="' + comic.basename + '"></div>'
+		} else {
+			gridHtml += '<div class="comic-preview-placeholder"><span>No preview</span></div>'
+		}
+		gridHtml += '</div>'
+		gridHtml += '<div class="comic-grid-info">'
+		gridHtml += '<div class="comic-details">'
+		gridHtml += '<h4 class="comic-title">' + comic.title + '</h4>'
+		if (comic.author) {
+			gridHtml += '<p class="comic-author">by ' + comic.author + '</p>'
+		}
+		gridHtml += '</div>'
+		gridHtml += '<div class="comic-grid-actions">'
+		gridHtml += '<a href="{{config.github.previewerUrl}}?url=' + encodeURIComponent('/rss/' + comic.basename + '.rss') + '" class="btn-small" target="_blank">Preview</a>'
+		gridHtml += '<a href="./rss/' + encodeURI(comic.basename) + '.rss" class="btn-small" onclick="copy(this, event)"><span class="status">RSS</span></a>'
+		gridHtml += '</div></div></div>'
+		
+		var listHtml = '<div class="comic-list-item" style="display: none;">'
+		listHtml += '<div class="comic-info">'
+		listHtml += '<div class="ellipsis" title="' + comic.title + (comic.author ? ' by ' + comic.author : '') + '">'
+		listHtml += comic.title + ' <small>' + (comic.author ? 'by ' + comic.author : '') + '</small>'
+		listHtml += '</div>'
+		listHtml += '<div class="comic-meta">'
+		if (comic.hasStrips) {
+			listHtml += '<span class="strip-count">' + comic.stripCount + ' strips</span>'
+			listHtml += '<span class="last-update">Last: ' + comic.lastUpdate + '</span>'
+		} else {
+			listHtml += '<span class="no-strips">No strips available</span>'
+		}
+		listHtml += '</div></div>'
+		listHtml += '<div class="actions">'
+		listHtml += '<a href="{{config.github.previewerUrl}}?url=' + encodeURIComponent('/rss/' + comic.basename + '.rss') + '" target="_blank">'
+		listHtml += '<img src="./static/external_sm.png" class="icon" alt=""> Preview</a>'
+		listHtml += '<a href="./rss/' + encodeURI(comic.basename) + '.rss" onclick="copy(this, event)">'
+		listHtml += '<img src="../static/rss_sm.png" class="icon rss-icon" alt=""><span class="status">Copy RSS URL</span></a>'
+		listHtml += '<a href="' + comic.url + '" target="_blank">'
+		listHtml += '<img src="./static/link_sm.png" class="icon" alt=""> Source</a>'
+		listHtml += '</div></div>'
+		
+		comicItem.innerHTML = gridHtml + listHtml
+		container.appendChild(comicItem)
+	})
+	
+	// Initialize preview images for newly rendered comics
+	if (window.initializePreviews) {
+		window.initializePreviews()
+	}
+}
+
+function updatePaginationControls() {
+	var totalPages = Math.ceil(filteredComics.length / itemsPerPage)
+	document.getElementById('currentPage').textContent = currentPage
+	document.getElementById('totalPages').textContent = totalPages
+	
+	document.getElementById('prevPage').disabled = currentPage === 1
+	document.getElementById('nextPage').disabled = currentPage === totalPages
+}
+
+function changePage(direction) {
+	var totalPages = Math.ceil(filteredComics.length / itemsPerPage)
+	var newPage = currentPage + direction
+	
+	if (newPage >= 1 && newPage <= totalPages) {
+		currentPage = newPage
+		renderComics()
+		updatePaginationControls()
+		// Scroll to top of comics
+		document.getElementById('all-comics').scrollIntoView({ behavior: 'smooth' })
+	}
+}
+
+// View toggle
+function setView(view) {
+	currentView = view
+	var container = document.getElementById('comics-container')
+	var buttons = document.querySelectorAll('.view-btn')
+	
+	buttons.forEach(btn => {
+		if (btn.dataset.view === view) {
+			btn.classList.add('active')
+		} else {
+			btn.classList.remove('active')
+		}
+	})
+	
+	if (view === 'grid') {
+		container.className = 'comics-grid-view'
+	} else {
+		container.className = 'comics-list-view'
+	}
+}
+
+// Copy functionality
+function copyToClipboard(text) {
+	var textArea = document.createElement('textarea')
+	textArea.className = 'copyable'
+	textArea.value = text
+	document.body.appendChild(textArea)
+	textArea.select()
+	var wasSuccessful = document.execCommand('copy')
+	document.body.removeChild(textArea)
+	return wasSuccessful
+}
+
+function updateStatus(self) {
+	var status = self.querySelector('.status')
+	if (status) {
+		var originalText = status.innerHTML
+		status.innerHTML = 'Copied!'
 		setTimeout(function () {
-			status.innerHTML = status.innerHTML.replace('Copied', 'Copy')
+			status.innerHTML = originalText
 		}, 1500)
 	}
+}
 
-	function copy(self, event) {
-		var text = self.href
-		if (copyToClipboard(text)) {
-			updateStatus(self)
-			event.preventDefault()
-		}
-		return false
+function copy(self, event) {
+	var text = self.href
+	if (copyToClipboard(text)) {
+		updateStatus(self)
+		event.preventDefault()
 	}
+	return false
+}
+
+// Include the comic preview loader
+var script = document.createElement('script')
+script.src = './static/comic-preview-loader.js'
+script.onload = function() {
+	console.log('Comic preview loader script loaded')
+	if (window.loadComicPreview && window.initializePreviews) {
+		window.initializePreviews()
+	}
+}
+document.head.appendChild(script)
+
+// Add click to expand functionality for comic previews
+document.addEventListener('click', function(e) {
+	if (e.target.classList.contains('comic-preview-image') && e.target.classList.contains('loaded')) {
+		var wrapper = e.target.parentElement
+		var comicItem = wrapper.closest('.comic-grid-item')
+		
+		if (wrapper.classList.contains('expanded')) {
+			// Collapse
+			wrapper.classList.remove('expanded')
+			if (comicItem) comicItem.classList.remove('expanded-item')
+			document.body.style.overflow = '' // Re-enable scrolling
+		} else {
+			// Expand
+			wrapper.classList.add('expanded')
+			if (comicItem) comicItem.classList.add('expanded-item')
+			document.body.style.overflow = 'hidden' // Prevent background scrolling
+		}
+	}
+	
+	// Also close when clicking on the expanded background
+	if (e.target.classList.contains('comic-preview-wrapper') && e.target.classList.contains('expanded')) {
+		e.target.classList.remove('expanded')
+		var comicItem = e.target.closest('.comic-grid-item')
+		if (comicItem) comicItem.classList.remove('expanded-item')
+		document.body.style.overflow = ''
+	}
+})
 </script>

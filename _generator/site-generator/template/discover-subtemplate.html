@@ -1,0 +1,533 @@
+<section id="discover-hero">
+	<div class="container">
+		<h1 class="discover-title">Discover Comics</h1>
+		<p class="discover-subtitle">Find your next favorite comic strip</p>
+	</div>
+</section>
+
+<div class="container">
+	<section id="recently-updated">
+		<h2 class="section-title">Recently Updated</h2>
+		<div class="comic-grid recent-grid">
+			{{each recentlyUpdated comic}}
+				<div class="comic-card" data-comic="{{@ comic.basename}}">
+					<div class="comic-preview-wrapper">
+						{{if comic.strips && comic.strips.length > 0}}
+							<div class="comic-preview-image" data-src="{{@ comic.basename }}"></div>
+						{{else}}
+							<div class="comic-preview-placeholder">
+								<span>No preview available</span>
+							</div>
+						{{/if}}
+					</div>
+					<div class="comic-card-info">
+						<div class="comic-card-details">
+							<h3 class="comic-title">{{@ comic.title }}</h3>
+							{{if comic.author}}<p class="comic-author">by {{@ comic.author }}</p>{{/if}}
+							<div class="comic-stats">
+								<span class="update-time" title="{{@ comic.strips[0].date }}">Updated {{@ comic.daysAgo }} days ago</span>
+								<span class="strip-count">{{@ comic.strips.length }} strips</span>
+							</div>
+						</div>
+						<div class="comic-card-actions">
+							<a href="{{config.github.previewerUrl}}?url={{ encodeURIComponent('/rss/' + comic.basename + '.rss') }}" class="btn-small" target="_blank">Preview</a>
+							<a href="./rss/{{ encodeURI(comic.basename) }}.rss" class="btn-small" onclick="copy(this, event)"><span class="status">RSS</span></a>
+						</div>
+					</div>
+				</div>
+			{{/each}}
+		</div>
+	</section>
+
+	<section id="random-discover">
+		<h2 class="section-title">Random Discovery</h2>
+		<button class="btn btn-large" onclick="showRandomComics()">
+			<span class="icon">🎲</span> Show Me Random Comics
+		</button>
+		<div class="comic-grid random-grid" id="random-comics-grid">
+		</div>
+	</section>
+</div>
+
+
+<style>
+/* Discovery Page Styles */
+#discover-hero {
+	background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+	color: white;
+	text-align: center;
+	padding: 60px 30px;
+	margin-bottom: 40px;
+}
+
+.discover-title {
+	font-size: 48px;
+	font-weight: 700;
+	margin: 0 0 10px 0;
+}
+
+.discover-subtitle {
+	font-size: 20px;
+	opacity: 0.9;
+	margin: 0;
+}
+
+.section-title {
+	font-size: 28px;
+	font-weight: 600;
+	margin: 0 0 24px 0;
+	color: #333;
+}
+
+/* Comic Grid Layouts */
+.comic-grid {
+	display: flex;
+	flex-direction: column;
+	gap: 24px;
+	margin-bottom: 32px;
+}
+
+.comic-card {
+	background: white;
+	border-radius: 12px;
+	overflow: hidden;
+	box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+	transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.comic-card.expanded-card {
+	overflow: visible;
+}
+
+.comic-card:hover {
+	transform: translateY(-2px);
+	box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+}
+
+.comic-preview-wrapper {
+	width: 100%;
+	min-height: 300px;
+	max-height: 600px;
+	background: #f8f9fa;
+	position: relative;
+	overflow: hidden;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+/* Ensure recently updated cards show the preview */
+.recent-grid .comic-card {
+	display: flex;
+	flex-direction: column;
+	height: auto;
+	position: relative;
+}
+
+.recent-grid .comic-preview-wrapper {
+	flex: 0 0 auto;
+	min-height: 400px;
+	position: relative;
+}
+
+.comic-preview-image {
+	width: 100%;
+	height: 100%;
+	min-height: inherit;
+	background-size: contain;
+	background-position: center top;
+	background-repeat: no-repeat;
+	transition: opacity 0.3s;
+	opacity: 0;
+	cursor: pointer;
+	position: absolute;
+	top: 0;
+	left: 0;
+}
+
+.comic-preview-image.loaded {
+	opacity: 1;
+}
+
+.comic-preview-image.no-preview {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	opacity: 1;
+}
+
+.no-preview-text {
+	color: #999;
+	font-size: 14px;
+}
+
+/* Expand comic on click */
+.comic-card.expanded-card {
+	position: relative;
+	z-index: 100;
+}
+
+.comic-preview-wrapper.expanded {
+	position: fixed;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	width: 95vw;
+	height: 90vh;
+	max-width: none;
+	max-height: none;
+	min-height: auto;
+	background: rgba(0, 0, 0, 0.95);
+	cursor: zoom-out;
+	z-index: 1000;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 20px;
+	box-sizing: border-box;
+}
+
+.comic-preview-wrapper.expanded .comic-preview-image {
+	width: 100%;
+	height: 100%;
+	background-size: contain;
+	background-position: center;
+	background-repeat: no-repeat;
+	position: relative;
+}
+
+.comic-preview-placeholder {
+	width: 100%;
+	height: 100%;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	color: #999;
+	font-size: 14px;
+}
+
+.comic-card-info {
+	padding: 16px;
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	flex: 0 0 auto;
+}
+
+.comic-card-details {
+	flex: 1;
+	min-width: 0;
+}
+
+.comic-card .comic-title {
+	font-size: 18px;
+	font-weight: 600;
+	margin: 0 0 4px 0;
+	color: #333;
+}
+
+.comic-card .comic-author {
+	font-size: 14px;
+	color: #666;
+	margin: 0 0 8px 0;
+}
+
+.comic-stats {
+	display: flex;
+	gap: 16px;
+	font-size: 12px;
+	color: #888;
+}
+
+.comic-card-actions {
+	display: flex;
+	gap: 8px;
+	flex-shrink: 0;
+}
+
+/* Buttons */
+.btn {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	padding: 8px 16px;
+	border-radius: 6px;
+	text-decoration: none;
+	font-size: 14px;
+	font-weight: 500;
+	transition: all 0.2s;
+	border: none;
+	cursor: pointer;
+}
+
+.btn-primary {
+	background: #0066cc;
+	color: white;
+}
+
+.btn-primary:hover {
+	background: #0052a3;
+	text-decoration: none;
+}
+
+.btn-secondary {
+	background: white;
+	color: #0066cc;
+	border: 1px solid #0066cc;
+}
+
+.btn-secondary:hover {
+	background: #f0f7ff;
+	text-decoration: none;
+}
+
+.btn-large {
+	font-size: 18px;
+	padding: 12px 24px;
+	margin: 0 auto 24px;
+	display: flex;
+}
+
+.btn-small {
+	padding: 6px 12px;
+	font-size: 12px;
+	background: white;
+	color: #0066cc;
+	border: 1px solid #0066cc;
+	border-radius: 4px;
+	text-decoration: none;
+	transition: all 0.2s;
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+}
+
+.btn-small:hover {
+	background: #f0f7ff;
+	text-decoration: none;
+}
+
+
+/* Random Comics */
+#random-discover {
+	text-align: center;
+}
+
+.random-grid {
+	display: none;
+}
+
+.random-grid.active {
+	display: flex;
+	flex-direction: column;
+	gap: 24px;
+}
+
+
+/* Expand comic on click */
+.comic-card.expanded-card {
+	position: relative;
+	z-index: 100;
+}
+
+.comic-preview-wrapper.expanded {
+	position: fixed;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	width: 95vw;
+	height: 90vh;
+	max-width: none;
+	max-height: none;
+	min-height: auto;
+	background: rgba(0, 0, 0, 0.95);
+	cursor: zoom-out;
+	z-index: 1000;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 20px;
+	box-sizing: border-box;
+}
+
+.comic-preview-wrapper.expanded .comic-preview-image {
+	width: 100%;
+	height: 100%;
+	background-size: contain;
+	background-position: center;
+	background-repeat: no-repeat;
+	position: relative;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+	.discover-title {
+		font-size: 36px;
+	}
+	
+	.discover-subtitle {
+		font-size: 16px;
+	}
+	
+	.comic-preview-wrapper {
+		min-height: 250px;
+		max-height: 500px;
+	}
+	
+	.comic-grid-item .comic-preview-wrapper {
+		height: 300px;
+	}
+}
+
+@media (max-width: 480px) {
+	.comic-preview-wrapper {
+		min-height: 200px;
+		max-height: 400px;
+	}
+	
+	.comic-grid-item .comic-preview-wrapper {
+		height: 250px;
+	}
+}
+</style>
+
+<script>
+// Store comics data for random selection
+var comicsData = [
+	{{each seriesObjects seriesObject}}{{if language === (seriesObject.language || 'eng')}}
+	{
+		basename: '{{@ seriesObject.basename }}',
+		title: '{{@ seriesObject.title.replace(/'/g, "\\'") }}',
+		author: '{{@ (seriesObject.author || "").replace(/'/g, "\\'") }}',
+		hasStrips: {{seriesObject.strips && seriesObject.strips.length > 0}}
+	},
+	{{/if}}{{/each}}
+]
+
+// Random comics
+async function showRandomComics() {
+	var randomGrid = document.getElementById('random-comics-grid')
+	
+	// Clear existing
+	randomGrid.innerHTML = ''
+	
+	// Get 6 random comics
+	var shuffled = comicsData.sort(() => 0.5 - Math.random())
+	var selected = shuffled.slice(0, 6)
+	
+	for (const comic of selected) {
+		var card = document.createElement('div')
+		card.className = 'comic-card'
+		card.setAttribute('data-comic', comic.basename)
+		
+		var html = '<div class="comic-preview-wrapper">'
+		if (comic.hasStrips) {
+			html += '<div class="comic-preview-image" data-src="' + comic.basename + '"></div>'
+		} else {
+			html += '<div class="comic-preview-placeholder"><span>No preview available</span></div>'
+		}
+		html += '</div>'
+		html += '<div class="comic-card-info">'
+		html += '<div class="comic-card-details">'
+		html += '<h3 class="comic-title">' + comic.title + '</h3>'
+		if (comic.author) {
+			html += '<p class="comic-author">by ' + comic.author + '</p>'
+		}
+		html += '</div>'
+		html += '<div class="comic-card-actions">'
+		html += '<a href="{{config.github.previewerUrl}}?url=' + encodeURIComponent('/rss/' + comic.basename + '.rss') + '" class="btn-small" target="_blank">Preview</a>'
+		html += '<a href="./rss/' + encodeURI(comic.basename) + '.rss" class="btn-small" onclick="copy(this, event)"><span class="status">RSS</span></a>'
+		html += '</div></div>'
+		
+		card.innerHTML = html
+		randomGrid.appendChild(card)
+		
+		// Load preview image if available
+		var previewEl = card.querySelector('.comic-preview-image[data-src]')
+		if (previewEl && window.loadComicPreview) {
+			var imageUrl = await window.loadComicPreview(comic.basename)
+			if (imageUrl) {
+				previewEl.style.backgroundImage = 'url(' + imageUrl + ')'
+				previewEl.classList.add('loaded')
+			}
+		}
+	}
+	
+	randomGrid.classList.add('active')
+}
+
+// Copy functionality
+function copyToClipboard(text) {
+	var textArea = document.createElement('textarea')
+	textArea.className = 'copyable'
+	textArea.value = text
+	document.body.appendChild(textArea)
+	textArea.select()
+	var wasSuccessful = document.execCommand('copy')
+	document.body.removeChild(textArea)
+	return wasSuccessful
+}
+
+function updateStatus(self) {
+	var status = self.querySelector('.status')
+	if (status) {
+		var originalText = status.innerHTML
+		status.innerHTML = 'Copied!'
+		setTimeout(function () {
+			status.innerHTML = originalText
+		}, 1500)
+	}
+}
+
+function copy(self, event) {
+	var text = self.href
+	if (copyToClipboard(text)) {
+		updateStatus(self)
+		event.preventDefault()
+	}
+	return false
+}
+
+// Include the comic preview loader
+var script = document.createElement('script')
+script.src = './static/comic-preview-loader.js'
+script.onload = function() {
+	console.log('Comic preview loader script loaded')
+	// Manually trigger preview loading in case DOM is already ready
+	if (window.loadComicPreview && typeof initializePreviews !== 'undefined') {
+		initializePreviews()
+	}
+}
+script.onerror = function() {
+	console.error('Failed to load comic preview loader script')
+}
+document.head.appendChild(script)
+
+// Add click to expand functionality for comic previews
+document.addEventListener('click', function(e) {
+	if (e.target.classList.contains('comic-preview-image') && e.target.classList.contains('loaded')) {
+		var wrapper = e.target.parentElement
+		var comicCard = wrapper.closest('.comic-card')
+		
+		if (wrapper.classList.contains('expanded')) {
+			// Collapse
+			wrapper.classList.remove('expanded')
+			if (comicCard) comicCard.classList.remove('expanded-card')
+			document.body.style.overflow = '' // Re-enable scrolling
+		} else {
+			// Expand
+			wrapper.classList.add('expanded')
+			if (comicCard) comicCard.classList.add('expanded-card')
+			document.body.style.overflow = 'hidden' // Prevent background scrolling
+		}
+	}
+	
+	// Also close when clicking on the expanded background
+	if (e.target.classList.contains('comic-preview-wrapper') && e.target.classList.contains('expanded')) {
+		e.target.classList.remove('expanded')
+		var comicCard = e.target.closest('.comic-card')
+		if (comicCard) comicCard.classList.remove('expanded-card')
+		document.body.style.overflow = ''
+	}
+})
+</script>
