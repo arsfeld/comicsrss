@@ -1,4 +1,4 @@
-const { resolve } = require('url')
+// Use WHATWG URL API instead of deprecated url.resolve
 
 module.exports = async function multipageScraper({ getSeriesObjects, getStrip, cachedSeriesObjects }) {
 	const newSeriesObjects = await getSeriesObjects()
@@ -121,7 +121,7 @@ async function getStrips(getStrip, newSeriesObject, cachedStrips, stats) {
 			strips.push(strip)
 		}
 		if (! strip.isOldestStrip) {
-			return resolve(stripPageUrl, strip.olderRelUrl)
+			return new URL(strip.olderRelUrl, stripPageUrl).toString()
 		}
 	}
 }

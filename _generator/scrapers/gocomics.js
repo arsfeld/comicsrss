@@ -29,28 +29,45 @@ async function parse_list_html(base, path, is_political) {
 
 	const tagless_scripts = html.split('<script>').slice(1).map(html_part => html_part.split('</script>')[0])
 	const item_list_script = tagless_scripts.find(script => script.includes('featureLanguage'))
-	const array_that_gets_pushed = JSON.parse(item_list_script.match(/\.push\((.+)\)/)[1]) // [ 1, '32:[ ... ]' ]
-	const improve_this_var_name = JSON.parse(array_that_gets_pushed[1].replace(/^\d+:/, '')) // [ [ '$', 'script', null, { dangerouslySetInnerHTML: { ... }, ... } ], [ '$', 'section', null, { className: '...', children: [ ... ]} ] ]
-	const { /* categories, */ groupedFeatures } = improve_this_var_name[1][3].children[0][3]
+	
+	if (!item_list_script) {
+		console.error(`gocomics: Could not find featureLanguage script in ${path}`)
+		return []
+	}
+	
+	const pushMatch = item_list_script.match(/\.push\((.+)\)/)
+	if (!pushMatch) {
+		console.error(`gocomics: Could not find .push() pattern in ${path}`)
+		return []
+	}
+	
+	try {
+		const array_that_gets_pushed = JSON.parse(pushMatch[1]) // [ 1, '32:[ ... ]' ]
+		const improve_this_var_name = JSON.parse(array_that_gets_pushed[1].replace(/^\d+:/, '')) // [ [ '$', 'script', null, { dangerouslySetInnerHTML: { ... }, ... } ], [ '$', 'section', null, { className: '...', children: [ ... ]} ] ]
+		const { /* categories, */ groupedFeatures } = improve_this_var_name[1][3].children[0][3]
 
-	const item_list = groupedFeatures.flatMap(group => group.items)
+		const item_list = groupedFeatures.flatMap(group => group.items)
 
-	const series_object_entries = item_list
-		.filter(item => !global.DEBUG || item.slug === 'calvinandhobbes')
-		.map(item => {
-			const is_spanish = item.categories.some(cat => cat.categorySlug === 'comicos-en-espanol')
+		const series_object_entries = item_list
+			.filter(item => !global.DEBUG || item.slug === 'calvinandhobbes')
+			.map(item => {
+				const is_spanish = item.categories.some(cat => cat.categorySlug === 'comicos-en-espanol')
 
-			return [item.slug, {
-				title: item.name,
-				url: `${ base }/${ item.slug }`,
-				language: is_spanish ? 'spa' : 'eng',
-				author: item.creators.join(' and '),
-				imageUrl: item.badgeImage.url,
-				isPolitical: is_political,
-			}]
-		})
+				return [item.slug, {
+					title: item.name,
+					url: `${ base }/${ item.slug }`,
+					language: is_spanish ? 'spa' : 'eng',
+					author: item.creators.join(' and '),
+					imageUrl: item.badgeImage.url,
+					isPolitical: is_political,
+				}]
+			})
 
-	return series_object_entries
+		return series_object_entries
+	} catch (e) {
+		console.error(`gocomics: Error parsing ${path}:`, e.message)
+		return []
+	}
 }
 
 module.exports = async function main(cached_series_objects) {

@@ -23,12 +23,14 @@ module.exports = async function main(cachedSeriesObjects) {
 			imageUrl: 'https://avatar.amuniversal.com/feature_avatars/recommendation_images/features/dc/large_rec-201701251557.jpg',
 			isPolitical: false,
 			language: 'eng',
-			strips: mergeStrips(cachedSeriesObjects.dilbert.strips, newStrips)
+			strips: mergeStrips(cachedSeriesObjects.dilbert?.strips || [], newStrips)
 		}
 	}
 }
 
 function mergeStrips(cachedStrips, newStrips) {
+	if (!cachedStrips.length) return newStrips
+	
 	const mostRecentStrip = cachedStrips[0]
 	const addTheseStrips = []
 	for (const strip of newStrips) {

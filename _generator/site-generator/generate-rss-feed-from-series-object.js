@@ -32,7 +32,6 @@ module.exports = seriesObject => {
 
 function betweenDate(testDate, minDate, maxDate) {
 	testDate = testDate.slice(0, 10) // Fix arcamax dates prior to 2021-05-26 // remove after 2021-08-25
-	console.log(testDate, minDate, maxDate, minDate <= testDate, testDate <= maxDate)
 	return minDate <= testDate && testDate <= maxDate
 }
 
