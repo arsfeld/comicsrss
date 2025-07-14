@@ -72,7 +72,14 @@ module.exports = async function main(cached_series_objects) {
 		}
 		const list_of_recent_strip_dates = await get_recent_strip_dates(slug)
 
-		const most_recent_cached_strip_date = cached_series_objects[slug]?.strips[0]?.date || '0000-00-00'
+		// Filter out any cached strips with future dates
+		const today = new Date().toISOString().slice(0, 10)
+		const cachedStrips = cached_series_objects[slug]?.strips || []
+		const validCachedStrips = cachedStrips.filter(strip => strip.date <= today)
+		if (cachedStrips.length > validCachedStrips.length) {
+			console.log(`gocomics: ${slug}: Filtered out ${cachedStrips.length - validCachedStrips.length} future-dated strips`)
+		}
+		const most_recent_cached_strip_date = validCachedStrips[0]?.date || '0000-00-00'
 
 		const new_strip_dates = list_of_recent_strip_dates.filter(date => date > most_recent_cached_strip_date).reverse()
 
@@ -110,7 +117,7 @@ module.exports = async function main(cached_series_objects) {
 
 		series_object.strips = [
 			...new_strips,
-			...(cached_series_objects[slug]?.strips || []),
+			...validCachedStrips,
 		]
 	}
 

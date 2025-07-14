@@ -113,7 +113,7 @@ function humanReadableDateToIsoDate(mmmDay) {
 	if (currentMonth < month) {
 		year = (parseInt(year, 10) - 1).toString()
 	}
-	const yyyymmdd = `${currentYear}-${month}-${pad2(day)}`
+	const yyyymmdd = `${year}-${month}-${pad2(day)}`
 	return yyyymmdd
 }
 

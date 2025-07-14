@@ -54,7 +54,13 @@ module.exports = async function multipageScraper({ getSeriesObjects, getStrip, c
 
 async function getStrips(getStrip, newSeriesObject, cachedStrips) {
 	const strips = []
-	const previousUrls = cachedStrips.map(strip => strip.url)
+	// Filter out any cached strips with future dates
+	const today = new Date().toISOString().slice(0, 10)
+	const validCachedStrips = cachedStrips.filter(strip => strip.date <= today)
+	if (cachedStrips.length > validCachedStrips.length) {
+		console.log(`Filtered out ${cachedStrips.length - validCachedStrips.length} future-dated strips`)
+	}
+	const previousUrls = validCachedStrips.map(strip => strip.url)
 
 	return Promise.resolve(newSeriesObject.mostRecentStripUrl)
 		.then(getStripPage)
@@ -78,7 +84,7 @@ async function getStrips(getStrip, newSeriesObject, cachedStrips) {
 				return null
 			}
 			return Object.assign(newSeriesObject, {
-				strips: strips.concat(cachedStrips),
+				strips: strips.concat(validCachedStrips),
 				imageUrl: strips[0].headerImageUrl,
 				author: strips[0].author,
 			})
