@@ -110,6 +110,25 @@ async function main(options) {
 	}
 
 	console.log(`\n✨ Total time: ${((new Date() - startTime) / 1000).toFixed(1)}s\n`)
+	
+	// Output JSON summary for GitHub Actions
+	if (process.env.GITHUB_ACTIONS && scrape) {
+		const summary = {
+			totalTime: ((new Date() - startTime) / 1000).toFixed(1),
+			scrapers: {
+				total: scraperNames.length,
+				successful: scrapeStats.length,
+				failed: scrapeErrors.length
+			},
+			comics: {
+				total: scrapeStats.reduce((sum, s) => sum + s.comicCount, 0),
+				newStrips: scrapeStats.reduce((sum, s) => sum + s.newStrips, 0)
+			},
+			details: scrapeStats,
+			errors: scrapeErrors.map(e => e.message || e.toString())
+		}
+		console.log('::GITHUB_ACTIONS_SUMMARY::' + JSON.stringify(summary))
+	}
 
 	const exitCode = scrapeErrors.length === scraperNames.length ? 1 : 0 // this will exit non-zero if some scrapers worked
 	process.exit(exitCode)

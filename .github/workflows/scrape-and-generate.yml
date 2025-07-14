@@ -51,7 +51,68 @@ jobs:
             scraper-cache-
             
       - name: Run scraper and generator
-        run: node _generator/bin --scrape --generate --verbose
+        id: scraper
+        run: |
+          # Run scraper and capture output
+          OUTPUT=$(node _generator/bin --scrape --generate --verbose 2>&1)
+          echo "$OUTPUT"
+          
+          # Extract summary JSON if present
+          SUMMARY=$(echo "$OUTPUT" | grep "::GITHUB_ACTIONS_SUMMARY::" | sed 's/::GITHUB_ACTIONS_SUMMARY:://')
+          if [ ! -z "$SUMMARY" ]; then
+            echo "summary=$SUMMARY" >> $GITHUB_OUTPUT
+          fi
+        
+      - name: Generate job summary
+        if: steps.scraper.outputs.summary
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const summary = JSON.parse('${{ steps.scraper.outputs.summary }}');
+            
+            let markdown = '## 📊 Comics RSS Scraping Summary\n\n';
+            
+            // Overall stats
+            markdown += '### 📈 Overall Statistics\n\n';
+            markdown += '| Metric | Value |\n';
+            markdown += '|--------|-------|\n';
+            markdown += `| ⏱️ Total Time | ${summary.totalTime}s |\n`;
+            markdown += `| 🔍 Scrapers Run | ${summary.scrapers.successful}/${summary.scrapers.total} |\n`;
+            markdown += `| 📚 Total Comics | ${summary.comics.total} |\n`;
+            markdown += `| 🆕 New Strips | ${summary.comics.newStrips} |\n`;
+            if (summary.scrapers.failed > 0) {
+              markdown += `| ❌ Failed Scrapers | ${summary.scrapers.failed} |\n`;
+            }
+            markdown += '\n';
+            
+            // Per-scraper details
+            if (summary.details && summary.details.length > 0) {
+              markdown += '### 🔍 Scraper Details\n\n';
+              markdown += '| Scraper | Comics | New Strips | Time |\n';
+              markdown += '|---------|--------|-----------|------|\n';
+              summary.details.forEach(scraper => {
+                markdown += `| ${scraper.scraperName} | ${scraper.comicCount} | ${scraper.newStrips} | ${scraper.timeTaken}s |\n`;
+              });
+              markdown += '\n';
+            }
+            
+            // Errors if any
+            if (summary.errors && summary.errors.length > 0) {
+              markdown += '### ❌ Errors\n\n';
+              summary.errors.forEach(error => {
+                markdown += `- ${error}\n`;
+              });
+              markdown += '\n';
+            }
+            
+            // Success message
+            if (summary.comics.newStrips > 0) {
+              markdown += `\n✨ Successfully scraped **${summary.comics.newStrips}** new comic strips!\n`;
+            } else {
+              markdown += '\n✅ All comics are up to date!\n';
+            }
+            
+            await core.summary.addRaw(markdown).write();
         
       - name: Save scraper cache
         uses: actions/cache/save@v4
