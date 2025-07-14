@@ -94,6 +94,53 @@ async function main(options) {
 		console.log(`📚 Total comics: ${totalComics}`)
 		console.log(`🆕 New strips: ${totalNewStrips}`)
 		console.log('─'.repeat(60))
+		
+		// Show comics with new content
+		const comicsWithNewContent = scrapeStats
+			.flatMap(scraper => scraper.comicDetails
+				.filter(comic => comic.newStrips > 0)
+				.map(comic => ({ ...comic, scraper: scraper.scraperName }))
+			)
+			.sort((a, b) => b.newStrips - a.newStrips)
+		
+		if (comicsWithNewContent.length > 0) {
+			console.log('\n📰 COMICS WITH NEW CONTENT:')
+			console.log('─'.repeat(60))
+			console.log('Comic Name                     | New | Latest Date')
+			console.log('─'.repeat(60))
+			comicsWithNewContent.slice(0, 20).forEach(comic => {
+				const name = comic.name.padEnd(30).slice(0, 30)
+				const newStrips = comic.newStrips.toString().padStart(3)
+				console.log(`${name} | ${newStrips} | ${comic.latestDate}`)
+			})
+			if (comicsWithNewContent.length > 20) {
+				console.log(`... and ${comicsWithNewContent.length - 20} more comics with updates`)
+			}
+			console.log('─'.repeat(60))
+		}
+		
+		// Show all comics in verbose mode
+		if (global.VERBOSE && scrapeStats.length > 0) {
+			console.log('\n📋 ALL COMICS BY SCRAPER:')
+			console.log('─'.repeat(60))
+			
+			scrapeStats.forEach(scraper => {
+				if (scraper.comicDetails.length === 0) return
+				
+				console.log(`\n${scraper.scraperName.toUpperCase()} (${scraper.comicDetails.length} comics):`)
+				console.log('Comic Name                     | Strips | Latest Date')
+				console.log('─'.repeat(60))
+				
+				scraper.comicDetails
+					.sort((a, b) => a.name.localeCompare(b.name))
+					.forEach(comic => {
+						const name = comic.name.padEnd(30).slice(0, 30)
+						const strips = comic.totalStrips.toString().padStart(6)
+						console.log(`${name} | ${strips} | ${comic.latestDate}`)
+					})
+			})
+			console.log('─'.repeat(60))
+		}
 	}
 	if (generate) {
 		const siteGenerator = require('./site-generator/index.js')
@@ -125,7 +172,14 @@ async function main(options) {
 				newStrips: scrapeStats.reduce((sum, s) => sum + s.newStrips, 0)
 			},
 			details: scrapeStats,
-			errors: scrapeErrors.map(e => e.message || e.toString())
+			errors: scrapeErrors.map(e => e.message || e.toString()),
+			comicsWithNewContent: scrapeStats
+				.flatMap(scraper => scraper.comicDetails
+					.filter(comic => comic.newStrips > 0)
+					.map(comic => ({ ...comic, scraper: scraper.scraperName }))
+				)
+				.sort((a, b) => b.newStrips - a.newStrips)
+				.slice(0, 50) // Top 50 for the summary
 		}
 		console.log('::GITHUB_ACTIONS_SUMMARY::' + JSON.stringify(summary))
 	}
@@ -190,6 +244,22 @@ async function runScraper(scraperName) {
 	const newStripCount = Object.values(verifiedSeriesObjects).reduce((sum, obj) => sum + (obj.strips?.length || 0), 0)
 	const timeTaken = ((endTime - startTime) / 1000).toFixed(1)
 	
+	// Collect per-comic details
+	const comicDetails = Object.entries(verifiedSeriesObjects).map(([name, comic]) => {
+		const cachedComic = cachedSeriesObjects[name]
+		const oldStripCount = cachedComic?.strips?.length || 0
+		const currentStripCount = comic.strips?.length || 0
+		const newStripsForComic = Math.max(0, currentStripCount - oldStripCount)
+		
+		return {
+			name: comic.title || name,
+			basename: name,
+			totalStrips: currentStripCount,
+			newStrips: newStripsForComic,
+			latestDate: comic.strips?.[0]?.date || 'N/A'
+		}
+	}).filter(comic => comic.totalStrips > 0) // Only include comics with strips
+	
 	console.log(`✓ ${scraperName}: ${newComicCount} comics, ${newStripCount - cachedStripCount} new strips (${timeTaken}s)`)
 	
 	return {
@@ -197,7 +267,8 @@ async function runScraper(scraperName) {
 		comicCount: newComicCount,
 		stripCount: newStripCount,
 		newStrips: newStripCount - cachedStripCount,
-		timeTaken: parseFloat(timeTaken)
+		timeTaken: parseFloat(timeTaken),
+		comicDetails
 	}
 }
 
