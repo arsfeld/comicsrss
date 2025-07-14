@@ -1,4 +1,4 @@
-# comicsrss.com
+# comicsrss.xyz
 
 > [!IMPORTANT]
 > **This is a personal fork of the original comicsrss.com project**
@@ -11,7 +11,9 @@
 
 [![Scrape, Generate and Deploy Comics RSS](https://github.com/arsfeld/comicsrss/actions/workflows/scrape-and-generate.yml/badge.svg)](https://github.com/arsfeld/comicsrss/actions/workflows/scrape-and-generate.yml)
 
-Source code for the site generator and rss feed generator for [comicsrss.com](https://www.comicsrss.com).
+Source code for the site generator and rss feed generator for [comicsrss.xyz](https://comicsrss.xyz).
+
+This fork uses GitHub Actions instead of CircleCI for automated scraping and deployment.
 
 Also, all of the site's content is in this repository, as it is hosted by GitHub Pages.
 
@@ -87,17 +89,24 @@ npx serve
 
 ### Run your own auto-updating scraper and website using GitHub Actions
 
-1. Fork the repository
-2. The GitHub Actions workflow is already configured to run automatically
-3. Ensure GitHub Pages is enabled in your repository settings (set to deploy from GitHub Actions)
-4. The workflow will run every 6 hours and on manual trigger
-5. That's it! The site will be automatically scraped and deployed
+This fork uses GitHub Actions instead of the original CircleCI setup, making it easier to deploy your own instance:
+
+1. Fork this repository
+2. The GitHub Actions workflow is already configured and will run automatically
+3. Enable GitHub Pages in your repository settings:
+   - Go to Settings → Pages
+   - Set Source to "GitHub Actions"
+4. The workflow runs:
+   - Every 6 hours automatically
+   - On manual trigger via the Actions tab
+   - Comprehensive job summaries show scraping statistics and any errors
+5. That's it! Your site will be automatically scraped and deployed to `https://[your-username].github.io/comicsrss/`
 
 
 
 ## Scraper API
 
-To create a scraper for a single-series website that shows multiple days' comic strips per web page, copy the code from [dilbert.js](https://github.com/arsfeld/comicsrss/tree/gh-pages/_generator/scrapers/dilbert.js) and change it as needed.
+To create a scraper for a single-series website that shows multiple days' comic strips per web page, copy the code from [dilbert.js](https://github.com/arsfeld/comicsrss/tree/gh-pages/_generator/scrapers/dilbert.js) and change it as needed. Note: Dilbert has moved to subscription platforms and no longer provides free comics.
 
 To create a scraper for a multi-series website, copy the code from [arcamax.js](https://github.com/arsfeld/comicsrss/tree/gh-pages/_generator/scrapers/arcamax.js) and change it as needed.
 
