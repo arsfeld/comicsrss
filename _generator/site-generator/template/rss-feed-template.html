@@ -35,7 +35,9 @@
 			<guid{{if ! strip.isPermaLink}} isPermaLink="false"{{/if}}>{{strip.guid}}</guid>
 			<pubDate>{{strip.date.toUTCString()}}</pubDate>
 			<description><![CDATA[<p>
-	<img src="{{strip.imageUrl}}" alt="{{title}}{{author ? ' by ' + author : ''}} on {{strip.date.toUTCString().slice(0, -13)}}" title="{{title}}{{author ? ' by ' + author : ''}} on {{strip.date.toUTCString().slice(0, -13)}}">
+	<a href="{{strip.imageUrl}}" target="_blank" rel="noopener noreferrer">
+		<img src="{{strip.imageUrl}}" alt="{{title}}{{author ? ' by ' + author : ''}} on {{strip.date.toUTCString().slice(0, -13)}}" title="{{title}}{{author ? ' by ' + author : ''}} on {{strip.date.toUTCString().slice(0, -13)}}">
+	</a>
 </p>
 <p style="font-size: 11px; color: #666; margin-top: 12px; border-top: 1px solid #eee; padding-top: 8px;">
 	🔗 <a href="{{strip.url}}" style="color: #666;">Original</a> • 
